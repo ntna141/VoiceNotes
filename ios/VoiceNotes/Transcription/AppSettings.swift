@@ -37,9 +37,8 @@ final class AppSettings {
     }
 
     func addLanguage(_ code: String) {
-        let trimmed = code.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !trimmed.isEmpty, !languageHintList.contains(trimmed) else { return }
-        languageHints = (languageHintList + [trimmed]).joined(separator: "\n")
+        guard let resolved = LanguageHints.resolve(code), !languageHintList.contains(resolved) else { return }
+        languageHints = (languageHintList + [resolved]).joined(separator: "\n")
     }
 
     func removeLanguage(_ code: String) {

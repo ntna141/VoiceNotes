@@ -25,6 +25,7 @@ struct VoiceNotesApp: App {
             transcription.enqueue(note)
         }
         transcription.registerBackgroundTasks()
+        CameraSession.shared.prewarm()
         #if DEBUG
         if inMemory {
             SeedData.populate(context)

@@ -5,6 +5,7 @@ enum BitmapConverter {
     enum Mode: String, CaseIterable, Identifiable {
         case dither
         case threshold
+        case outline
 
         var id: String { rawValue }
 
@@ -12,6 +13,7 @@ enum BitmapConverter {
             switch self {
             case .dither: return "Dither"
             case .threshold: return "Threshold"
+            case .outline: return "Outline"
             }
         }
     }
@@ -45,21 +47,29 @@ enum BitmapConverter {
         }
         ctx.draw(cg, in: rect)
 
+        var hi = [Double](repeating: 0, count: src * src)
+        for i in 0..<(src * src) {
+            let p = i * 4
+            let luma = Double(pixels[p]) * 0.299 + Double(pixels[p + 1]) * 0.587 + Double(pixels[p + 2]) * 0.114
+            let alpha = Double(pixels[p + 3]) / 255
+            hi[i] = (255 - luma) * alpha
+        }
+
         var gray = [Double](repeating: 0, count: size * size)
         for row in 0..<size {
             for col in 0..<size {
                 var sum = 0.0
                 for dy in 0..<scale {
                     for dx in 0..<scale {
-                        let i = ((row * scale + dy) * src + col * scale + dx) * 4
-                        let luma = Double(pixels[i]) * 0.299 + Double(pixels[i + 1]) * 0.587 + Double(pixels[i + 2]) * 0.114
-                        let alpha = Double(pixels[i + 3]) / 255
-                        sum += (255 - luma) * alpha
+                        sum += hi[(row * scale + dy) * src + col * scale + dx]
                     }
                 }
                 gray[row * size + col] = sum / Double(scale * scale)
             }
         }
+
+        let edges = mode == .outline ? edgeStrength(hi, src: src, scale: scale, size: size) : nil
+        let edgeCut = max(40, (edges?.max() ?? 0) * 0.25)
 
         var packed = [UInt8](repeating: 0, count: MoodIcons.bytesPerIcon)
         let stride = (size + 7) / 8
@@ -67,7 +77,7 @@ enum BitmapConverter {
             for col in 0..<size {
                 let i = row * size + col
                 let old = gray[i]
-                let ink = old >= 128
+                let ink = edges.map { $0[i] >= edgeCut } ?? (old >= 128)
                 if ink {
                     packed[row * stride + col / 8] |= 1 << UInt8(7 - (col % 8))
                 }
@@ -88,6 +98,20 @@ enum BitmapConverter {
             }
         }
         return packed
+    }
+
+    private static func edgeStrength(_ hi: [Double], src: Int, scale: Int, size: Int) -> [Double] {
+        var cells = [Double](repeating: 0, count: size * size)
+        for y in 1..<(src - 1) {
+            for x in 1..<(src - 1) {
+                let p = { (dx: Int, dy: Int) in hi[(y + dy) * src + x + dx] }
+                let gx = p(1, -1) + 2 * p(1, 0) + p(1, 1) - p(-1, -1) - 2 * p(-1, 0) - p(-1, 1)
+                let gy = p(-1, 1) + 2 * p(0, 1) + p(1, 1) - p(-1, -1) - 2 * p(0, -1) - p(1, -1)
+                let c = (y / scale) * size + x / scale
+                cells[c] = max(cells[c], (gx * gx + gy * gy).squareRoot())
+            }
+        }
+        return cells
     }
 
     static func image(from bitmap: [UInt8]) -> UIImage? {

@@ -61,15 +61,11 @@ struct MoodIconEditorView: View {
                 rebuild()
             }
         }
-        .onDisappear {
-            persist()
-        }
     }
 
     private var topBar: some View {
         HStack(spacing: 10) {
             Button {
-                persist()
                 dismiss()
             } label: {
                 Image(systemName: "chevron.left")
@@ -166,7 +162,7 @@ struct MoodIconEditorView: View {
                 }
             }
             .tint(Neo.green)
-            footer(extractSubject ? "The background is removed on device before converting." : "Threshold keeps flat shapes crisp. Dither preserves shading in photos.")
+            footer(extractSubject ? "The background is removed on device before converting." : "Threshold keeps flat shapes crisp. Dither preserves shading in photos. Outline traces edges, best for line drawings on paper.")
         }
         .disabled(source == nil)
         .opacity(source == nil ? 0.5 : 1)

@@ -38,16 +38,7 @@ struct SettingsView: View {
                     }
 
                     section("Language hints") {
-                        tokenEditor(
-                            placeholder: "Add a language (en)",
-                            text: $newHint,
-                            tokens: settings.languageHintList,
-                            capitalize: .never,
-                            add: addHint,
-                            remove: settings.removeLanguage,
-                            emptyFooter: "Language codes added here are sent as hints so speech is recognized in those languages.",
-                            filledFooter: { "\($0) language\($0 == 1 ? "" : "s") sent as hints with every transcription." }
-                        )
+                        languageEditor
                     }
 
                     section("Custom vocabulary") {
@@ -150,6 +141,74 @@ struct SettingsView: View {
             .foregroundStyle(Neo.ink)
     }
 
+    private var languageSuggestions: [LanguageHint] {
+        LanguageHints.matches(newHint, excluding: settings.languageHintList)
+    }
+
+    private var resolvedHint: String? {
+        LanguageHints.resolve(newHint)
+    }
+
+    private var canAddHint: Bool {
+        guard let code = resolvedHint else { return false }
+        return !settings.languageHintList.contains(code)
+    }
+
+    private var languageEditor: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                TextField("Add a language", text: $newHint)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .submitLabel(.done)
+                    .neoField()
+                    .onSubmit(addHint)
+                Button("Add", action: addHint)
+                    .buttonStyle(NeoButtonStyle(fill: Neo.red, shadow: 2))
+                    .disabled(!canAddHint)
+                    .opacity(canAddHint ? 1 : 0.5)
+            }
+            if !languageSuggestions.isEmpty {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(languageSuggestions.prefix(8))) { language in
+                        Button {
+                            pickLanguage(language)
+                        } label: {
+                            HStack {
+                                Text(language.localizedName)
+                                    .font(.subheadline.weight(.bold))
+                                Spacer()
+                                Text(language.code)
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(Neo.muted)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 10)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Neo.ink)
+                        .accessibilityLabel("\(language.localizedName), \(language.code)")
+                    }
+                }
+                .neoCard(shadow: 2, radius: Neo.buttonRadius)
+            }
+            if !settings.languageHintList.isEmpty {
+                FlowLayout(spacing: 8) {
+                    ForEach(settings.languageHintList, id: \.self) { token in
+                        termChip(LanguageHints.displayName(for: token)) {
+                            settings.removeLanguage(token)
+                        }
+                    }
+                }
+            }
+            footer(settings.languageHintList.isEmpty
+                ? "Languages added here are sent as hints so speech is recognized in those languages."
+                : "\(settings.languageHintList.count) language\(settings.languageHintList.count == 1 ? "" : "s") sent as hints with every transcription.")
+        }
+    }
+
     private func tokenEditor(
         placeholder: String,
         text: Binding<String>,
@@ -192,7 +251,13 @@ struct SettingsView: View {
     }
 
     private func addHint() {
+        guard canAddHint else { return }
         settings.addLanguage(newHint)
+        newHint = ""
+    }
+
+    private func pickLanguage(_ language: LanguageHint) {
+        settings.addLanguage(language.code)
         newHint = ""
     }
 

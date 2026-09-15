@@ -49,13 +49,6 @@
 			);
 			target = 6234070C6E4926258461B945 /* VoiceNotes */;
 		};
-		F33D577D9494FEF4408DB3B2 /* Exceptions for "VoiceNotesShare" folder in "VoiceNotesShare" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 5A78810CF86F817ABBBEBC6F /* VoiceNotesShare */;
-		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -69,9 +62,6 @@
 		};
 		3CF95A14633AA73BA2E487CC /* VoiceNotesShare */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				F33D577D9494FEF4408DB3B2 /* Exceptions for "VoiceNotesShare" folder in "VoiceNotesShare" target */,
-			);
 			path = VoiceNotesShare;
 			sourceTree = "<group>";
 		};
@@ -136,8 +126,8 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				5CFCC60BAF817D115984E2D7 /* Shared */,
 				3CF95A14633AA73BA2E487CC /* VoiceNotesShare */,
+				5CFCC60BAF817D115984E2D7 /* Shared */,
 			);
 			name = VoiceNotesShare;
 			packageProductDependencies = (
@@ -161,8 +151,8 @@
 				F415F75337C3DA662CF35700 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				5CFCC60BAF817D115984E2D7 /* Shared */,
 				214C196CCA854AEA1CF8AB5B /* VoiceNotes */,
+				5CFCC60BAF817D115984E2D7 /* Shared */,
 			);
 			name = VoiceNotes;
 			packageProductDependencies = (
@@ -404,6 +394,7 @@
 				DEVELOPMENT_TEAM = YMDHD6S886;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = VoiceNotesShare/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "voice notes";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -422,6 +413,7 @@
 				DEVELOPMENT_TEAM = YMDHD6S886;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = VoiceNotesShare/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "voice notes";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

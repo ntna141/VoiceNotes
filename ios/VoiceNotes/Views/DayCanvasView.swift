@@ -46,6 +46,11 @@ struct DayCanvasView: View {
     }
 }
 
+struct IdentifiedImage: Identifiable {
+    let id = UUID()
+    let image: UIImage
+}
+
 struct DayCanvasPage: View {
     let dayKey: String
 
@@ -68,11 +73,6 @@ struct DayCanvasPage: View {
     private struct PinchState {
         var magnification: CGFloat = 1
         var anchor: UnitPoint = .center
-    }
-
-    private struct IdentifiedImage: Identifiable {
-        let id = UUID()
-        let image: UIImage
     }
 
     init(dayKey: String) {

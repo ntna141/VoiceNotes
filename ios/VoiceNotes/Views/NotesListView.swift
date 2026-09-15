@@ -22,6 +22,7 @@ struct NotesListView: View {
     @Query private var moods: [DayMood]
     @State private var searchText = ""
     @State private var path = NavigationPath()
+    @State private var showingCamera = false
     @FocusState private var searchFocused: Bool
 
     private var moodByDay: [String: Int] {
@@ -118,6 +119,11 @@ struct NotesListView: View {
             .navigationDestination(for: MoodIconDestination.self) { destination in
                 MoodIconEditorView(mood: destination.mood)
             }
+            .sheet(isPresented: $showingCamera) {
+                CameraSheet { images, dayKey in
+                    addPhotos(images, to: dayKey)
+                }
+            }
             .task {
                 #if DEBUG
                 let args = ProcessInfo.processInfo.arguments
@@ -127,6 +133,8 @@ struct NotesListView: View {
                     openSettings()
                 } else if args.contains("-show-canvas") {
                     openCanvas(DayKey.today)
+                } else if args.contains("-show-camera") {
+                    showingCamera = true
                 } else if args.contains("-show-editor"), let note = notes.first(where: { $0.hasAudio && $0.transcription == .done }) {
                     openNote(note)
                 }
@@ -185,6 +193,14 @@ struct NotesListView: View {
                     }
             )
             if !searchFocused {
+                Button {
+                    showingCamera = true
+                } label: {
+                    Image(systemName: "camera.fill")
+                }
+                .buttonStyle(NeoIconButtonStyle(size: 48))
+                .transition(.scale.combined(with: .opacity))
+                .accessibilityLabel("Camera")
                 Button {
                     openCanvas(DayKey.today)
                 } label: {
@@ -275,6 +291,16 @@ struct NotesListView: View {
         var next = NavigationPath()
         next.append(SettingsDestination())
         path = next
+    }
+
+    private func addPhotos(_ images: [UIImage], to dayKey: String) {
+        Task {
+            for image in images {
+                _ = await context.addCanvasItem(dayKey: dayKey, source: image, cutout: nil, spread: CGSize(width: 80, height: 180))
+            }
+            try? context.save()
+            openCanvas(dayKey)
+        }
     }
 
     private func delete(_ items: [Note]) {

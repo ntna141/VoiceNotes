@@ -9,11 +9,12 @@ final class MoodIconStore {
     @ObservationIgnored private let imageCache = NSCache<NSNumber, UIImage>()
 
     func image(for mood: Int) -> UIImage? {
+        guard let bitmap = glyph(for: mood) else { return nil }
         let key = NSNumber(value: mood)
         if let cached = imageCache.object(forKey: key) {
             return cached
         }
-        guard let bitmap = glyph(for: mood), let image = BitmapConverter.image(from: bitmap) else { return nil }
+        guard let image = BitmapConverter.image(from: bitmap) else { return nil }
         imageCache.setObject(image, forKey: key)
         return image
     }
