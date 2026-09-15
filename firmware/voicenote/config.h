@@ -1,0 +1,62 @@
+#pragma once
+
+#include <driver/gpio.h>
+#include <driver/spi_master.h>
+
+#define DEVICE_NAME "VoiceNote"
+#define FW_VERSION "0.1.0"
+#define DEV_NO_SLEEP 1
+
+#define EPD_WIDTH 200
+#define EPD_HEIGHT 200
+#define EPD_SPI_HOST SPI2_HOST
+#define EPD_DC_PIN GPIO_NUM_10
+#define EPD_CS_PIN GPIO_NUM_11
+#define EPD_SCK_PIN GPIO_NUM_12
+#define EPD_MOSI_PIN GPIO_NUM_13
+#define EPD_RST_PIN GPIO_NUM_9
+#define EPD_BUSY_PIN GPIO_NUM_8
+
+#define EPD_PWR_PIN GPIO_NUM_6
+#define AUDIO_PWR_PIN GPIO_NUM_42
+#define VBAT_HOLD_PIN GPIO_NUM_17
+#define PA_CTRL_PIN GPIO_NUM_46
+
+#define BTN_REC_PIN GPIO_NUM_0
+#define BTN_TOP_PIN GPIO_NUM_18
+
+#define I2C_SDA_PIN 47
+#define I2C_SCL_PIN 48
+#define ES8311_ADDR 0x18
+
+#define I2S_MCLK_PIN 14
+#define I2S_BCLK_PIN 15
+#define I2S_WS_PIN 38
+#define I2S_DOUT_PIN 45
+#define I2S_DIN_PIN 16
+
+#define SAMPLE_RATE 16000
+#define ADPCM_BLOCK_SAMPLES 256
+#define MIC_ANALOG_GAIN_STEP 5
+#define MIC_DIGITAL_GAIN 2
+
+#define BAT_ADC_PIN 4
+
+#define BTN_DEBOUNCE_MS 20
+#define BTN_DOUBLE_MS 350
+#define BTN_HOLD_MS 400
+#define WAKE_GESTURE_WINDOW_MS 600
+
+#define QUICK_REC_MIN_MS 500
+#define REC_MAX_MS (10UL * 60UL * 1000UL)
+#define REC_SCREEN_TICK_MS 1000
+
+#define CONNECT_TIMEOUT_MS 15000
+#define IDLE_AWAKE_MS 30000
+#define END_ACK_TIMEOUT_MS 5000
+#define DONE_SHOW_MS 5000
+#define MOOD_PICK_MS 20000
+#define ERROR_AWAKE_MS 60000
+
+#define HOME_MAX_LINES 8
+#define HOME_MAX_LINE_CHARS 32
