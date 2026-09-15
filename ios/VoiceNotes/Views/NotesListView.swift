@@ -5,13 +5,22 @@ struct YearDestination: Hashable {
     let dayKey: String
 }
 
+struct SettingsDestination: Hashable {}
+
+struct MoodIconDestination: Hashable {
+    let mood: Int
+}
+
+struct DayCanvasDestination: Hashable {
+    let dayKey: String
+}
+
 struct NotesListView: View {
     @Environment(\.modelContext) private var context
     @Environment(DeviceLink.self) private var link
     @Query(sort: \Note.createdAt, order: .reverse) private var notes: [Note]
     @Query private var moods: [DayMood]
     @State private var searchText = ""
-    @State private var showSettings = false
     @State private var path = NavigationPath()
     @FocusState private var searchFocused: Bool
 
@@ -60,7 +69,7 @@ struct NotesListView: View {
                         }
                     } header: {
                         NeoSectionHeader(title: section.title)
-                            .padding(.leading, 16)
+                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 4, trailing: 16))
                     }
                     .listSectionSeparator(.hidden)
                 }
@@ -93,13 +102,21 @@ struct NotesListView: View {
             .navigationDestination(for: YearDestination.self) { destination in
                 YearMoodSheet(initialDayKey: destination.dayKey) { note in
                     path.append(note)
+                } onOpenCanvas: { dayKey in
+                    path.append(DayCanvasDestination(dayKey: dayKey))
                 }
+            }
+            .navigationDestination(for: DayCanvasDestination.self) { destination in
+                DayCanvasView(dayKey: destination.dayKey)
             }
             .navigationDestination(for: Note.self) { note in
                 NoteEditorView(note: note, mood: moodByDay[note.dayKey] ?? 0)
             }
-            .sheet(isPresented: $showSettings) {
+            .navigationDestination(for: SettingsDestination.self) { _ in
                 SettingsView()
+            }
+            .navigationDestination(for: MoodIconDestination.self) { destination in
+                MoodIconEditorView(mood: destination.mood)
             }
             .task {
                 #if DEBUG
@@ -107,7 +124,9 @@ struct NotesListView: View {
                 if args.contains("-show-year") {
                     openYear(DayKey.today)
                 } else if args.contains("-show-settings") {
-                    showSettings = true
+                    openSettings()
+                } else if args.contains("-show-canvas") {
+                    openCanvas(DayKey.today)
                 } else if args.contains("-show-editor"), let note = notes.first(where: { $0.hasAudio && $0.transcription == .done }) {
                     openNote(note)
                 }
@@ -115,12 +134,13 @@ struct NotesListView: View {
             }
         }
         .tint(Neo.ink)
+        .fontDesign(.rounded)
     }
 
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Notes")
+                Text("Journal")
                     .font(.system(size: 40, weight: .black))
                     .foregroundStyle(Neo.ink)
                 Text(subtitle)
@@ -129,8 +149,7 @@ struct NotesListView: View {
             }
             Spacer()
             Button {
-                searchFocused = false
-                showSettings = true
+                openSettings()
             } label: {
                 Image(systemName: "gearshape.fill")
             }
@@ -151,18 +170,6 @@ struct NotesListView: View {
                     .onSubmit {
                         searchFocused = false
                     }
-                if searchFocused || !searchText.isEmpty {
-                    Button {
-                        if !searchText.isEmpty {
-                            searchText = ""
-                        }
-                        searchFocused = false
-                    } label: {
-                        Image(systemName: searchText.isEmpty ? "keyboard.chevron.compact.down" : "xmark.circle.fill")
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(searchText.isEmpty ? "Dismiss Keyboard" : "Clear Search")
-                }
             }
             .font(.body.weight(.semibold))
             .foregroundStyle(Neo.ink)
@@ -177,17 +184,33 @@ struct NotesListView: View {
                         }
                     }
             )
+            if !searchFocused {
+                Button {
+                    openCanvas(DayKey.today)
+                } label: {
+                    Image(systemName: "photo.badge.plus")
+                }
+                .buttonStyle(NeoIconButtonStyle(fill: Neo.yellow, size: 48))
+                .transition(.scale.combined(with: .opacity))
+                .accessibilityLabel("Photo Page")
+            }
             Button {
-                compose()
+                if searchFocused {
+                    searchFocused = false
+                } else {
+                    compose()
+                }
             } label: {
-                Image(systemName: "square.and.pencil")
+                Image(systemName: searchFocused ? "xmark" : "square.and.pencil")
+                    .contentTransition(.symbolEffect(.replace))
             }
             .buttonStyle(NeoIconButtonStyle(fill: Neo.red, size: 48))
-            .accessibilityLabel("New Note")
+            .accessibilityLabel(searchFocused ? "Dismiss Keyboard" : "New Note")
         }
+        .animation(.easeInOut(duration: 0.2), value: searchFocused)
         .padding(.horizontal, 16)
         .padding(.top, 8)
-        .padding(.bottom, 4)
+        .padding(.bottom, 14)
         .background(Neo.paper.opacity(0.95).ignoresSafeArea())
     }
 
@@ -212,7 +235,7 @@ struct NotesListView: View {
             return "Recording…"
         }
         let count = notes.count
-        return count == 1 ? "1 note" : "\(count) notes"
+        return count == 1 ? "1 entry" : "\(count) entries"
     }
 
     private func compose() {
@@ -237,6 +260,20 @@ struct NotesListView: View {
         searchFocused = false
         var next = NavigationPath()
         next.append(YearDestination(dayKey: dayKey))
+        path = next
+    }
+
+    private func openCanvas(_ dayKey: String) {
+        searchFocused = false
+        var next = NavigationPath()
+        next.append(DayCanvasDestination(dayKey: dayKey))
+        path = next
+    }
+
+    private func openSettings() {
+        searchFocused = false
+        var next = NavigationPath()
+        next.append(SettingsDestination())
         path = next
     }
 

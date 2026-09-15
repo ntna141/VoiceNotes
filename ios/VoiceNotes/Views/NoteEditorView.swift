@@ -12,6 +12,7 @@ struct NoteEditorView: View {
     @State private var title: String
     @State private var text: String
     @State private var player = AudioPlayer()
+    @State private var recorder = MicRecorder()
     @State private var copied = false
     @State private var saveTask: Task<Void, Never>?
     @FocusState private var focus: Field?
@@ -39,6 +40,9 @@ struct NoteEditorView: View {
             saveTask?.cancel()
             persist()
             player.stop()
+            if recorder.isRecording {
+                finishRecording()
+            }
         }
     }
 
@@ -69,6 +73,15 @@ struct NoteEditorView: View {
             .disabled(clipboardText.isEmpty)
             .opacity(clipboardText.isEmpty ? 0.5 : 1)
             .accessibilityLabel(copied ? "Copied" : "Copy")
+            if !note.hasAudio {
+                Button {
+                    toggleRecording()
+                } label: {
+                    Image(systemName: recorder.isRecording ? "stop.fill" : "mic.fill")
+                }
+                .buttonStyle(NeoIconButtonStyle(fill: recorder.isRecording ? Neo.red : Neo.card, size: 40))
+                .accessibilityLabel(recorder.isRecording ? "Stop recording" : "Record")
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
@@ -97,6 +110,12 @@ struct NoteEditorView: View {
                     .focused($focus, equals: .title)
                     .submitLabel(.next)
                     .autocorrectionDisabled()
+                    .disabled(recorder.isRecording)
+                    .onChange(of: note.title) { _, newValue in
+                        if newValue != title {
+                            title = newValue
+                        }
+                    }
                     .onChange(of: title) { _, newValue in
                         let single = newValue.replacingOccurrences(of: "\n", with: " ")
                         if single != newValue {
@@ -122,6 +141,7 @@ struct NoteEditorView: View {
                     .frame(minHeight: 320, alignment: .top)
                     .padding(8)
                     .focused($focus, equals: .body)
+                    .disabled(recorder.isRecording)
                     .neoCard(shadow: 0)
                     .overlay(alignment: .topLeading) {
                         if text.isEmpty {
@@ -183,6 +203,33 @@ struct NoteEditorView: View {
         persist()
         focus = nil
         dismiss()
+    }
+
+    private func toggleRecording() {
+        focus = nil
+        saveTask?.cancel()
+        persist()
+        if recorder.isRecording {
+            finishRecording()
+        } else {
+            Task {
+                _ = await recorder.start()
+            }
+        }
+    }
+
+    private func finishRecording() {
+        guard let result = recorder.stop() else { return }
+        if result.duration < 0.3 {
+            AudioStore.remove(result.fileName)
+            return
+        }
+        note.audioFileName = result.fileName
+        note.durationSeconds = result.duration
+        note.transcription = .queued
+        note.updatedAt = Date()
+        try? context.save()
+        transcription.enqueue(note)
     }
 
     private var audioBar: some View {

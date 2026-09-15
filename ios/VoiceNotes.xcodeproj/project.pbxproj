@@ -3,70 +3,84 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		156A78586B7039366E70C4F7 /* Neo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AADA4D48D9E427A4E4C0295E /* Neo.swift */; };
-		237019E086222887BC574210 /* NoteRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42AE06AD9CA0DD932C0D6336 /* NoteRow.swift */; };
-		2A5A6410B77CDBFDC561CB5B /* MoodIconStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01B2BE6A6054CF70600C8AE6 /* MoodIconStore.swift */; };
-		3BB68795578407B3FAE0FE88 /* Note.swift in Sources */ = {isa = PBXBuildFile; fileRef = 433726081C0716E91117E293 /* Note.swift */; };
-		3E9FA5A108E0711223060C79 /* NoteSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D65168DD0A183D4A9314EDD /* NoteSections.swift */; };
-		450F13946ACAC581FB294380 /* BitmapConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200C34CC8F88E70659507F7B /* BitmapConverter.swift */; };
-		4755C21290F8DCD6965F5072 /* BackgroundSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BA92D2DD0C7C763BBAB13F6 /* BackgroundSession.swift */; };
-		4ABB31714ADD02840404461B /* NoteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0BEFFD03A6F5F07D1E61C94 /* NoteEditorView.swift */; };
-		5CBD75C780AB14F2BD5A13DF /* Audio.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE28107A531B1149F6C92526 /* Audio.swift */; };
-		622601E7899A67FF53A267A9 /* DeviceLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 714E3FF1CFF8BA5A46AD3FC1 /* DeviceLink.swift */; };
-		641E21C85D5ECDAA56C28A31 /* DayMood.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F21861744D0AC2E0781EA5B /* DayMood.swift */; };
-		7463D106B191CFEF1BED2CE5 /* NotesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76C3DFBB6B132D0C2E7BB54B /* NotesListView.swift */; };
-		7A4EA8CAE4BFE44360E54E45 /* MoodWeekStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D2FD07E89973BDB5B80D7A0 /* MoodWeekStrip.swift */; };
-		7B48580A32228BF26B772341 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 465AD6BE5ACF4D5C602F27B4 /* AppSettings.swift */; };
-		904C55A321B199EFF3D3B921 /* SonioxClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D75D963BA83C4C27ADF2CDE /* SonioxClient.swift */; };
-		93216175F8950625BAD8A8EB /* TranscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CE11CCC17F08B3481D0494 /* TranscriptionService.swift */; };
-		950AF88B2F6147C48FEDA7AB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E6ABF754F2CC4591347654 /* SettingsView.swift */; };
-		99FA949F7321EE0C6EEC916B /* AudioStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E45173159B455CCEDC4DCF9B /* AudioStore.swift */; };
-		9C995533D5530804FDF0AF1B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 73F66E59F6FE98400062308C /* Assets.xcassets */; };
+		6DC556F12A1455CBC5DC00BC /* VoiceNotesShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 92962C8BF677A76DFECF5166 /* VoiceNotesShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A535BC8503C037A1DDEB2066 /* EasyBLE in Frameworks */ = {isa = PBXBuildFile; productRef = E406BDE345134F246D0016EB /* EasyBLE */; };
-		B043B39675E2FB5B1E00E860 /* DayKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2731BEDCE1E844F6ABBAA56 /* DayKey.swift */; };
-		C302B8EA28E0A07366C81DDD /* MoodGlyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = A17A6D2273554B56CE2BBD0D /* MoodGlyph.swift */; };
-		C439D6DC69B5BB062D5F4447 /* VoiceNotesApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42BE5FFE5E64647B6200C3A8 /* VoiceNotesApp.swift */; };
-		CA092007E81CA35C7C08208D /* PageEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF5CC7C12E7D61CB26C9E2ED /* PageEncoder.swift */; };
-		CCFF681391F2A5B317213FF8 /* MoodIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A3EA7BEDA08E220EC215F4C /* MoodIcons.swift */; };
-		EA43DD06452B74EE91B22AD7 /* YearMoodSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72E8B6B3E5F9E175E42A3E39 /* YearMoodSheet.swift */; };
-		EE7A7E69B9DAE410AD84BA7A /* SeedData.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5EA264665ECCF82347C00EC /* SeedData.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		85BEC33571AC30514F6AF808 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C3A872EF6933B6E9BB7F614F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5A78810CF86F817ABBBEBC6F;
+			remoteInfo = VoiceNotesShare;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		AC096D0EA7A4569213EA17D0 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				6DC556F12A1455CBC5DC00BC /* VoiceNotesShare.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
-		01B2BE6A6054CF70600C8AE6 /* MoodIconStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodIconStore.swift; sourceTree = "<group>"; };
 		07E893385CD0674B446CD913 /* VoiceNotes.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VoiceNotes.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		092E569F32994E360A100738 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		0A3EA7BEDA08E220EC215F4C /* MoodIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodIcons.swift; sourceTree = "<group>"; };
-		1D2FD07E89973BDB5B80D7A0 /* MoodWeekStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodWeekStrip.swift; sourceTree = "<group>"; };
-		200C34CC8F88E70659507F7B /* BitmapConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitmapConverter.swift; sourceTree = "<group>"; };
-		24CE11CCC17F08B3481D0494 /* TranscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionService.swift; sourceTree = "<group>"; };
-		2D65168DD0A183D4A9314EDD /* NoteSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteSections.swift; sourceTree = "<group>"; };
-		3F21861744D0AC2E0781EA5B /* DayMood.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayMood.swift; sourceTree = "<group>"; };
-		42AE06AD9CA0DD932C0D6336 /* NoteRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteRow.swift; sourceTree = "<group>"; };
-		42BE5FFE5E64647B6200C3A8 /* VoiceNotesApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNotesApp.swift; sourceTree = "<group>"; };
-		433726081C0716E91117E293 /* Note.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Note.swift; sourceTree = "<group>"; };
-		465AD6BE5ACF4D5C602F27B4 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
-		6BA92D2DD0C7C763BBAB13F6 /* BackgroundSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSession.swift; sourceTree = "<group>"; };
-		714E3FF1CFF8BA5A46AD3FC1 /* DeviceLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceLink.swift; sourceTree = "<group>"; };
-		72E8B6B3E5F9E175E42A3E39 /* YearMoodSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YearMoodSheet.swift; sourceTree = "<group>"; };
-		73F66E59F6FE98400062308C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		76C3DFBB6B132D0C2E7BB54B /* NotesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesListView.swift; sourceTree = "<group>"; };
-		7D75D963BA83C4C27ADF2CDE /* SonioxClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SonioxClient.swift; sourceTree = "<group>"; };
-		A17A6D2273554B56CE2BBD0D /* MoodGlyph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodGlyph.swift; sourceTree = "<group>"; };
-		AADA4D48D9E427A4E4C0295E /* Neo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Neo.swift; sourceTree = "<group>"; };
-		D0BEFFD03A6F5F07D1E61C94 /* NoteEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteEditorView.swift; sourceTree = "<group>"; };
-		D2731BEDCE1E844F6ABBAA56 /* DayKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayKey.swift; sourceTree = "<group>"; };
-		D5E6ABF754F2CC4591347654 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		D5EA264665ECCF82347C00EC /* SeedData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeedData.swift; sourceTree = "<group>"; };
+		92962C8BF677A76DFECF5166 /* VoiceNotesShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = VoiceNotesShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA98E8C8F30ACB2646237B1D /* EasyBLE */ = {isa = PBXFileReference; lastKnownFileType = folder; name = EasyBLE; path = ../../EasyBLE; sourceTree = SOURCE_ROOT; };
-		DF5CC7C12E7D61CB26C9E2ED /* PageEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageEncoder.swift; sourceTree = "<group>"; };
-		E45173159B455CCEDC4DCF9B /* AudioStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioStore.swift; sourceTree = "<group>"; };
-		FE28107A531B1149F6C92526 /* Audio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Audio.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		8AE13E50E30F3DC4E5ABE489 /* Exceptions for "VoiceNotes" folder in "VoiceNotes" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 6234070C6E4926258461B945 /* VoiceNotes */;
+		};
+		F33D577D9494FEF4408DB3B2 /* Exceptions for "VoiceNotesShare" folder in "VoiceNotesShare" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 5A78810CF86F817ABBBEBC6F /* VoiceNotesShare */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		214C196CCA854AEA1CF8AB5B /* VoiceNotes */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8AE13E50E30F3DC4E5ABE489 /* Exceptions for "VoiceNotes" folder in "VoiceNotes" target */,
+			);
+			path = VoiceNotes;
+			sourceTree = "<group>";
+		};
+		3CF95A14633AA73BA2E487CC /* VoiceNotesShare */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F33D577D9494FEF4408DB3B2 /* Exceptions for "VoiceNotesShare" folder in "VoiceNotesShare" target */,
+			);
+			path = VoiceNotesShare;
+			sourceTree = "<group>";
+		};
+		5CFCC60BAF817D115984E2D7 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		443687EE5EB307DB3702960C /* Frameworks */ = {
@@ -80,108 +94,24 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		0E8141F320AA1F082AA94A1C /* VoiceNotes */ = {
-			isa = PBXGroup;
-			children = (
-				73F66E59F6FE98400062308C /* Assets.xcassets */,
-				092E569F32994E360A100738 /* Info.plist */,
-				8311EB674377AC1F02D9624F /* App */,
-				91215B80B5BE82D7693E27BE /* Debug */,
-				39AB23CED553F2461562DF36 /* Device */,
-				84ABCCC7ADED51473E6026EF /* Icons */,
-				AC7A0489C08AA233844B2295 /* Model */,
-				DF6110DCEB692A1F9313E5FE /* Shared */,
-				E319EDE194907D8875B0F6F8 /* Transcription */,
-				93E15AB2E5AF067DA6E1C8C2 /* Views */,
-			);
-			path = VoiceNotes;
-			sourceTree = "<group>";
-		};
 		382D0E5896844F2A4D8E8280 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				07E893385CD0674B446CD913 /* VoiceNotes.app */,
+				92962C8BF677A76DFECF5166 /* VoiceNotesShare.appex */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		39AB23CED553F2461562DF36 /* Device */ = {
-			isa = PBXGroup;
-			children = (
-				FE28107A531B1149F6C92526 /* Audio.swift */,
-				714E3FF1CFF8BA5A46AD3FC1 /* DeviceLink.swift */,
-				DF5CC7C12E7D61CB26C9E2ED /* PageEncoder.swift */,
-			);
-			path = Device;
-			sourceTree = "<group>";
-		};
-		8311EB674377AC1F02D9624F /* App */ = {
-			isa = PBXGroup;
-			children = (
-				42BE5FFE5E64647B6200C3A8 /* VoiceNotesApp.swift */,
-			);
-			path = App;
-			sourceTree = "<group>";
-		};
-		84ABCCC7ADED51473E6026EF /* Icons */ = {
-			isa = PBXGroup;
-			children = (
-				200C34CC8F88E70659507F7B /* BitmapConverter.swift */,
-				01B2BE6A6054CF70600C8AE6 /* MoodIconStore.swift */,
-			);
-			path = Icons;
-			sourceTree = "<group>";
-		};
-		91215B80B5BE82D7693E27BE /* Debug */ = {
-			isa = PBXGroup;
-			children = (
-				D5EA264665ECCF82347C00EC /* SeedData.swift */,
-			);
-			path = Debug;
-			sourceTree = "<group>";
-		};
-		93E15AB2E5AF067DA6E1C8C2 /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				A17A6D2273554B56CE2BBD0D /* MoodGlyph.swift */,
-				1D2FD07E89973BDB5B80D7A0 /* MoodWeekStrip.swift */,
-				AADA4D48D9E427A4E4C0295E /* Neo.swift */,
-				D0BEFFD03A6F5F07D1E61C94 /* NoteEditorView.swift */,
-				42AE06AD9CA0DD932C0D6336 /* NoteRow.swift */,
-				2D65168DD0A183D4A9314EDD /* NoteSections.swift */,
-				76C3DFBB6B132D0C2E7BB54B /* NotesListView.swift */,
-				D5E6ABF754F2CC4591347654 /* SettingsView.swift */,
-				72E8B6B3E5F9E175E42A3E39 /* YearMoodSheet.swift */,
-			);
-			path = Views;
-			sourceTree = "<group>";
-		};
-		AC7A0489C08AA233844B2295 /* Model */ = {
-			isa = PBXGroup;
-			children = (
-				E45173159B455CCEDC4DCF9B /* AudioStore.swift */,
-				D2731BEDCE1E844F6ABBAA56 /* DayKey.swift */,
-				3F21861744D0AC2E0781EA5B /* DayMood.swift */,
-				433726081C0716E91117E293 /* Note.swift */,
-			);
-			path = Model;
 			sourceTree = "<group>";
 		};
 		BB2A8C670747A378888247FD = {
 			isa = PBXGroup;
 			children = (
 				E304D5F27FB8566CE5D2DB94 /* Packages */,
-				0E8141F320AA1F082AA94A1C /* VoiceNotes */,
+				5CFCC60BAF817D115984E2D7 /* Shared */,
+				214C196CCA854AEA1CF8AB5B /* VoiceNotes */,
+				3CF95A14633AA73BA2E487CC /* VoiceNotesShare */,
 				382D0E5896844F2A4D8E8280 /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		DF6110DCEB692A1F9313E5FE /* Shared */ = {
-			isa = PBXGroup;
-			children = (
-				0A3EA7BEDA08E220EC215F4C /* MoodIcons.swift */,
-			);
-			path = Shared;
 			sourceTree = "<group>";
 		};
 		E304D5F27FB8566CE5D2DB94 /* Packages */ = {
@@ -192,20 +122,30 @@
 			name = Packages;
 			sourceTree = "<group>";
 		};
-		E319EDE194907D8875B0F6F8 /* Transcription */ = {
-			isa = PBXGroup;
-			children = (
-				465AD6BE5ACF4D5C602F27B4 /* AppSettings.swift */,
-				6BA92D2DD0C7C763BBAB13F6 /* BackgroundSession.swift */,
-				7D75D963BA83C4C27ADF2CDE /* SonioxClient.swift */,
-				24CE11CCC17F08B3481D0494 /* TranscriptionService.swift */,
-			);
-			path = Transcription;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		5A78810CF86F817ABBBEBC6F /* VoiceNotesShare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E1228D241601EB953E85D343 /* Build configuration list for PBXNativeTarget "VoiceNotesShare" */;
+			buildPhases = (
+				999FFBC6F45EA4F0414D013F /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				5CFCC60BAF817D115984E2D7 /* Shared */,
+				3CF95A14633AA73BA2E487CC /* VoiceNotesShare */,
+			);
+			name = VoiceNotesShare;
+			packageProductDependencies = (
+			);
+			productName = VoiceNotesShare;
+			productReference = 92962C8BF677A76DFECF5166 /* VoiceNotesShare.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		6234070C6E4926258461B945 /* VoiceNotes */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = FEF97856CDF699F28DEC1282 /* Build configuration list for PBXNativeTarget "VoiceNotes" */;
@@ -213,10 +153,16 @@
 				5A342295BA1AF47407B0C2A3 /* Sources */,
 				8CDA0FE88B66D77C990B88FA /* Resources */,
 				443687EE5EB307DB3702960C /* Frameworks */,
+				AC096D0EA7A4569213EA17D0 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				F415F75337C3DA662CF35700 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				5CFCC60BAF817D115984E2D7 /* Shared */,
+				214C196CCA854AEA1CF8AB5B /* VoiceNotes */,
 			);
 			name = VoiceNotes;
 			packageProductDependencies = (
@@ -235,13 +181,15 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
+					5A78810CF86F817ABBBEBC6F = {
+						ProvisioningStyle = Automatic;
+					};
 					6234070C6E4926258461B945 = {
 						ProvisioningStyle = Automatic;
 					};
 				};
 			};
 			buildConfigurationList = 0CAE26DE757890C97FB02FD4 /* Build configuration list for PBXProject "VoiceNotes" */;
-			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -249,13 +197,17 @@
 				en,
 			);
 			mainGroup = BB2A8C670747A378888247FD;
+			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				222D4C1B5D9019757D8BE807 /* XCLocalSwiftPackageReference "../../EasyBLE" */,
+				C79491A1E21CAFF2EC5543C6 /* XCLocalSwiftPackageReference "../../EasyBLE" */,
 			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 382D0E5896844F2A4D8E8280 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				6234070C6E4926258461B945 /* VoiceNotes */,
+				5A78810CF86F817ABBBEBC6F /* VoiceNotesShare */,
 			);
 		};
 /* End PBXProject section */
@@ -265,7 +217,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9C995533D5530804FDF0AF1B /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -276,35 +227,25 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7B48580A32228BF26B772341 /* AppSettings.swift in Sources */,
-				5CBD75C780AB14F2BD5A13DF /* Audio.swift in Sources */,
-				99FA949F7321EE0C6EEC916B /* AudioStore.swift in Sources */,
-				4755C21290F8DCD6965F5072 /* BackgroundSession.swift in Sources */,
-				450F13946ACAC581FB294380 /* BitmapConverter.swift in Sources */,
-				B043B39675E2FB5B1E00E860 /* DayKey.swift in Sources */,
-				641E21C85D5ECDAA56C28A31 /* DayMood.swift in Sources */,
-				622601E7899A67FF53A267A9 /* DeviceLink.swift in Sources */,
-				C302B8EA28E0A07366C81DDD /* MoodGlyph.swift in Sources */,
-				2A5A6410B77CDBFDC561CB5B /* MoodIconStore.swift in Sources */,
-				CCFF681391F2A5B317213FF8 /* MoodIcons.swift in Sources */,
-				7A4EA8CAE4BFE44360E54E45 /* MoodWeekStrip.swift in Sources */,
-				156A78586B7039366E70C4F7 /* Neo.swift in Sources */,
-				3BB68795578407B3FAE0FE88 /* Note.swift in Sources */,
-				4ABB31714ADD02840404461B /* NoteEditorView.swift in Sources */,
-				237019E086222887BC574210 /* NoteRow.swift in Sources */,
-				3E9FA5A108E0711223060C79 /* NoteSections.swift in Sources */,
-				7463D106B191CFEF1BED2CE5 /* NotesListView.swift in Sources */,
-				CA092007E81CA35C7C08208D /* PageEncoder.swift in Sources */,
-				EE7A7E69B9DAE410AD84BA7A /* SeedData.swift in Sources */,
-				950AF88B2F6147C48FEDA7AB /* SettingsView.swift in Sources */,
-				904C55A321B199EFF3D3B921 /* SonioxClient.swift in Sources */,
-				93216175F8950625BAD8A8EB /* TranscriptionService.swift in Sources */,
-				C439D6DC69B5BB062D5F4447 /* VoiceNotesApp.swift in Sources */,
-				EA43DD06452B74EE91B22AD7 /* YearMoodSheet.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		999FFBC6F45EA4F0414D013F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F415F75337C3DA662CF35700 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5A78810CF86F817ABBBEBC6F /* VoiceNotesShare */;
+			targetProxy = 85BEC33571AC30514F6AF808 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		0D76EC01BDBD72C2FD1B2DCB /* Debug */ = {
@@ -380,6 +321,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = VoiceNotes/VoiceNotes.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_TEAM = YMDHD6S886;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -455,11 +397,48 @@
 			};
 			name = Release;
 		};
+		ACA1330AC72525E5ACC609C2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = VoiceNotesShare/VoiceNotesShare.entitlements;
+				DEVELOPMENT_TEAM = YMDHD6S886;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = VoiceNotesShare/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.ntna.VoiceNotes.Share;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		CC179C1F2A359518028F6C14 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = VoiceNotesShare/VoiceNotesShare.entitlements;
+				DEVELOPMENT_TEAM = YMDHD6S886;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = VoiceNotesShare/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.ntna.VoiceNotes.Share;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 		E62DE850B7C499D47E3C8D3B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = VoiceNotes/VoiceNotes.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_TEAM = YMDHD6S886;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -486,6 +465,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		E1228D241601EB953E85D343 /* Build configuration list for PBXNativeTarget "VoiceNotesShare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ACA1330AC72525E5ACC609C2 /* Debug */,
+				CC179C1F2A359518028F6C14 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		FEF97856CDF699F28DEC1282 /* Build configuration list for PBXNativeTarget "VoiceNotes" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -498,7 +486,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		222D4C1B5D9019757D8BE807 /* XCLocalSwiftPackageReference "../../EasyBLE" */ = {
+		C79491A1E21CAFF2EC5543C6 /* XCLocalSwiftPackageReference "../../EasyBLE" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../../EasyBLE;
 		};

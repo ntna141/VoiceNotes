@@ -35,6 +35,8 @@
 	</array>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>VoiceNotes connects to your VoiceNote recorder to receive recordings and sync moods.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Record voice notes with the phone microphone.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Pick images to use as custom mood icons on the device.</string>
 	<key>UIBackgroundModes</key>

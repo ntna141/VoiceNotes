@@ -13,9 +13,9 @@ struct VoiceNotesApp: App {
     private let transcription: TranscriptionService
 
     init() {
-        let schema = Schema([Note.self, DayMood.self])
+        let schema = Schema([Note.self, DayMood.self, DayCanvas.self, CanvasItem.self])
         let inMemory = ProcessInfo.processInfo.arguments.contains("-seed")
-        container = try! ModelContainer(for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: inMemory)])
+        container = try! ModelContainer(for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: inMemory, groupContainer: .none)])
         let context = container.mainContext
         settings = AppSettings()
         icons = MoodIconStore()
@@ -50,6 +50,7 @@ struct VoiceNotesApp: App {
             switch phase {
             case .active:
                 transcription.appWillEnterForeground()
+                Task { await container.mainContext.importSharedPhotos() }
             case .background:
                 transcription.appDidEnterBackground()
             default:

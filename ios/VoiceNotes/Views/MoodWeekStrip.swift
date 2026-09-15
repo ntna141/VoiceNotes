@@ -21,7 +21,7 @@ struct MoodWeekStrip: View {
                 Button {
                     onSelectDay(visibleDayKey)
                 } label: {
-                    Text(weekTitle(for: weekOffset).uppercased())
+                    Text(weekTitle(for: weekOffset))
                         .font(.footnote.weight(.black))
                         .foregroundStyle(Neo.ink)
                         .frame(maxWidth: .infinity)
@@ -54,6 +54,7 @@ struct MoodWeekStrip: View {
         return HStack(spacing: 6) {
             ForEach(days, id: \.key) { day in
                 Button {
+                    guard !day.isFuture else { return }
                     onSelectDay(day.key)
                 } label: {
                     VStack(spacing: 3) {
@@ -64,19 +65,14 @@ struct MoodWeekStrip: View {
                             .font(.footnote.weight(.heavy))
                             .foregroundStyle(Neo.ink)
                         MoodGlyph(mood: moodByDay[day.key] ?? 0, size: 24)
-                            .opacity(day.isFuture ? 0.25 : 1)
                     }
+                    .opacity(day.isFuture ? 0.45 : 1)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(day.key == today ? Neo.yellow : Neo.card)
-                            .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Neo.ink, lineWidth: 1.5))
-                    )
+                    .neoChip(day.key == today ? Neo.yellow : Neo.card)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .disabled(day.isFuture)
             }
         }
     }

@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum Neo {
-    static let ink = Color.black
+    static let ink = Color(red: 0.18, green: 0.13, blue: 0.11)
     static let paper = Color(red: 0.97, green: 0.95, blue: 0.90)
     static let card = Color.white
     static let red = Color(red: 1.0, green: 0.42, blue: 0.42)
@@ -9,54 +9,60 @@ enum Neo {
     static let green = Color(red: 0.55, green: 0.90, blue: 0.55)
     static let greenSoft = Color(red: 0.84, green: 0.96, blue: 0.84)
     static let yellow = Color(red: 1.0, green: 0.87, blue: 0.40)
-    static let muted = Color(red: 0.35, green: 0.35, blue: 0.35)
-    static let radius: CGFloat = 6
-    static let border: CGFloat = 2
-    static let shadow: CGFloat = 4
+    static let muted = Color(red: 0.45, green: 0.40, blue: 0.37)
+    static let radius: CGFloat = 20
+    static let buttonRadius: CGFloat = 16
+    static let chipRadius: CGFloat = 8
+    static let border: CGFloat = 1.75
+    static let chipBorder: CGFloat = 1.25
+    static let shadow: CGFloat = 2
+    static let buttonShadow: CGFloat = 2.5
 }
 
-struct NeoCard: ViewModifier {
-    var fill: Color
-    var shadow: CGFloat
-    var radius: CGFloat
+struct NeoSurface: View {
+    var fill: Color = Neo.card
+    var radius: CGFloat = Neo.radius
+    var border: CGFloat = Neo.border
+    var shadow: CGFloat = 0
+
+    private var shape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: radius, style: .continuous)
+    }
+
+    var body: some View {
+        shape
+            .fill(fill)
+            .overlay(shape.fill(LinearGradient(colors: [.white.opacity(0.45), .clear], startPoint: .top, endPoint: .center)))
+            .overlay(shape.strokeBorder(Neo.ink, lineWidth: border))
+            .background(shape.fill(Neo.ink).offset(x: shadow, y: shadow))
+    }
+}
+
+struct NeoPressStyle: ViewModifier {
+    let isPressed: Bool
+    let fill: Color
+    let radius: CGFloat
+    let shadow: CGFloat
 
     func body(content: Content) -> some View {
         content
-            .background(
-                RoundedRectangle(cornerRadius: radius)
-                    .fill(fill)
-                    .background(
-                        RoundedRectangle(cornerRadius: radius)
-                            .fill(Neo.ink)
-                            .offset(x: shadow, y: shadow)
-                    )
-                    .overlay(RoundedRectangle(cornerRadius: radius).strokeBorder(Neo.ink, lineWidth: Neo.border))
-            )
+            .foregroundStyle(Neo.ink)
+            .background(NeoSurface(fill: fill, radius: radius, shadow: isPressed ? 0 : shadow))
+            .offset(x: isPressed ? shadow : 0, y: isPressed ? shadow : 0)
+            .animation(.easeOut(duration: 0.08), value: isPressed)
     }
 }
 
 struct NeoButtonStyle: ButtonStyle {
     var fill: Color = Neo.card
-    var shadow: CGFloat = Neo.shadow
+    var shadow: CGFloat = Neo.buttonShadow
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.body.weight(.bold))
-            .foregroundStyle(Neo.ink)
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
-            .background(
-                RoundedRectangle(cornerRadius: Neo.radius)
-                    .fill(fill)
-                    .overlay(RoundedRectangle(cornerRadius: Neo.radius).strokeBorder(Neo.ink, lineWidth: Neo.border))
-            )
-            .background(
-                RoundedRectangle(cornerRadius: Neo.radius)
-                    .fill(Neo.ink)
-                    .offset(x: configuration.isPressed ? 0 : shadow, y: configuration.isPressed ? 0 : shadow)
-            )
-            .offset(x: configuration.isPressed ? shadow : 0, y: configuration.isPressed ? shadow : 0)
-            .animation(.easeOut(duration: 0.08), value: configuration.isPressed)
+            .modifier(NeoPressStyle(isPressed: configuration.isPressed, fill: fill, radius: Neo.buttonRadius, shadow: shadow))
     }
 }
 
@@ -67,37 +73,28 @@ struct NeoIconButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.title3.weight(.bold))
-            .foregroundStyle(Neo.ink)
             .frame(width: size, height: size)
-            .background(
-                RoundedRectangle(cornerRadius: Neo.radius)
-                    .fill(fill)
-                    .overlay(RoundedRectangle(cornerRadius: Neo.radius).strokeBorder(Neo.ink, lineWidth: Neo.border))
-            )
-            .background(
-                RoundedRectangle(cornerRadius: Neo.radius)
-                    .fill(Neo.ink)
-                    .offset(x: configuration.isPressed ? 0 : Neo.shadow, y: configuration.isPressed ? 0 : Neo.shadow)
-            )
-            .offset(x: configuration.isPressed ? Neo.shadow : 0, y: configuration.isPressed ? Neo.shadow : 0)
-            .animation(.easeOut(duration: 0.08), value: configuration.isPressed)
+            .modifier(NeoPressStyle(isPressed: configuration.isPressed, fill: fill, radius: Neo.buttonRadius * size / 48, shadow: Neo.buttonShadow))
     }
 }
 
 extension View {
     func neoCard(_ fill: Color = Neo.card, shadow: CGFloat = Neo.shadow, radius: CGFloat = Neo.radius) -> some View {
-        modifier(NeoCard(fill: fill, shadow: shadow, radius: radius))
+        background(NeoSurface(fill: fill, radius: radius, shadow: shadow))
+    }
+
+    func neoChip(_ fill: Color = Neo.card, border: CGFloat = Neo.chipBorder) -> some View {
+        background(NeoSurface(fill: fill, radius: Neo.chipRadius, border: border))
     }
 
     func neoField() -> some View {
         self
+            .foregroundStyle(Neo.ink)
+            .tint(Neo.ink)
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .background(
-                RoundedRectangle(cornerRadius: Neo.radius)
-                    .fill(Neo.card)
-                    .overlay(RoundedRectangle(cornerRadius: Neo.radius).strokeBorder(Neo.ink, lineWidth: Neo.border))
-            )
+            .background(NeoSurface(radius: Neo.buttonRadius))
+            .environment(\.colorScheme, .light)
     }
 }
 
@@ -105,16 +102,12 @@ struct NeoSectionHeader: View {
     let title: String
 
     var body: some View {
-        Text(title.uppercased())
+        Text(title)
             .font(.footnote.weight(.black))
             .foregroundStyle(Neo.ink)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(Neo.yellow)
-                    .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Neo.ink, lineWidth: Neo.border))
-            )
+            .neoChip(Neo.yellow)
     }
 }
 
@@ -163,12 +156,8 @@ struct NeoTag: View {
         Text(text)
             .font(.caption.weight(.bold))
             .foregroundStyle(Neo.ink)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(fill)
-                    .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Neo.ink, lineWidth: 1.5))
-            )
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .neoChip(fill)
     }
 }

@@ -36,6 +36,16 @@ final class AppSettings {
         customVocabulary = vocabularyTerms.filter { $0 != term }.joined(separator: "\n")
     }
 
+    func addLanguage(_ code: String) {
+        let trimmed = code.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmed.isEmpty, !languageHintList.contains(trimmed) else { return }
+        languageHints = (languageHintList + [trimmed]).joined(separator: "\n")
+    }
+
+    func removeLanguage(_ code: String) {
+        languageHints = languageHintList.filter { $0 != code }.joined(separator: "\n")
+    }
+
     var vocabularyTerms: [String] {
         customVocabulary
             .split(whereSeparator: { $0 == "\n" || $0 == "," })
@@ -45,7 +55,7 @@ final class AppSettings {
 
     var languageHintList: [String] {
         languageHints
-            .split(whereSeparator: { $0 == "," || $0 == " " })
+            .split(whereSeparator: { $0 == "\n" || $0 == "," || $0 == " " })
             .map { $0.trimmingCharacters(in: .whitespaces).lowercased() }
             .filter { !$0.isEmpty }
     }

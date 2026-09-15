@@ -19,4 +19,13 @@ nonisolated enum DayKey {
     static var today: String {
         make(Date())
     }
+
+    static func shifted(_ key: String, by days: Int, calendar: Calendar = .current) -> String? {
+        guard let base = date(key, calendar: calendar), let target = calendar.date(byAdding: .day, value: days, to: base) else { return nil }
+        return make(target, calendar: calendar)
+    }
+
+    static func shortLabel(_ key: String) -> String {
+        (date(key) ?? Date()).formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
+    }
 }

@@ -1,4 +1,3 @@
-import PhotosUI
 import SwiftUI
 
 struct SettingsView: View {
@@ -6,22 +5,24 @@ struct SettingsView: View {
     @Environment(AppSettings.self) private var settings
     @Environment(DeviceLink.self) private var link
     @Environment(MoodIconStore.self) private var icons
-    @State private var conversionMode = BitmapConverter.Mode.threshold
-    @State private var pickedItem: PhotosPickerItem?
-    @State private var pickingMood = 0
-    @State private var conversionError: String?
     @State private var newTerm = ""
+    @State private var newHint = ""
 
     var body: some View {
         @Bindable var settings = settings
         VStack(spacing: 0) {
-            HStack {
+            HStack(spacing: 10) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.left")
+                }
+                .buttonStyle(NeoIconButtonStyle(size: 40))
+                .accessibilityLabel("Back")
                 Text("Settings")
                     .font(.title.weight(.black))
                     .foregroundStyle(Neo.ink)
                 Spacer()
-                Button("Done") { dismiss() }
-                    .buttonStyle(NeoButtonStyle(fill: Neo.green))
             }
             .padding(16)
             ScrollView {
@@ -32,43 +33,40 @@ struct SettingsView: View {
                                 .textInputAutocapitalization(.never)
                                 .autocorrectionDisabled()
                                 .neoField()
-                            TextField("Language hints (en, vi)", text: $settings.languageHints)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                                .neoField()
                             footer("Recordings are uploaded when they finish and transcribed with \(SonioxClient.model).")
                         }
                     }
 
+                    section("Language hints") {
+                        tokenEditor(
+                            placeholder: "Add a language (en)",
+                            text: $newHint,
+                            tokens: settings.languageHintList,
+                            capitalize: .never,
+                            add: addHint,
+                            remove: settings.removeLanguage,
+                            emptyFooter: "Language codes added here are sent as hints so speech is recognized in those languages.",
+                            filledFooter: { "\($0) language\($0 == 1 ? "" : "s") sent as hints with every transcription." }
+                        )
+                    }
+
                     section("Custom vocabulary") {
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack(spacing: 10) {
-                                TextField("Add a name or term", text: $newTerm)
-                                    .autocorrectionDisabled()
-                                    .submitLabel(.done)
-                                    .neoField()
-                                    .onSubmit(addTerm)
-                                Button("Add", action: addTerm)
-                                    .buttonStyle(NeoButtonStyle(fill: Neo.red, shadow: 2))
-                                    .disabled(newTerm.trimmingCharacters(in: .whitespaces).isEmpty)
-                                    .opacity(newTerm.trimmingCharacters(in: .whitespaces).isEmpty ? 0.5 : 1)
-                            }
-                            let terms = settings.vocabularyTerms
-                            if !terms.isEmpty {
-                                FlowLayout(spacing: 8) {
-                                    ForEach(terms, id: \.self) { term in
-                                        termChip(term)
-                                    }
-                                }
-                            }
-                            footer(terms.isEmpty ? "Names and jargon added here are sent as context so they are recognized." : "\(terms.count) term\(terms.count == 1 ? "" : "s") sent as context with every transcription.")
-                        }
+                        tokenEditor(
+                            placeholder: "Add a name or term",
+                            text: $newTerm,
+                            tokens: settings.vocabularyTerms,
+                            capitalize: .words,
+                            add: addTerm,
+                            remove: settings.removeTerm,
+                            emptyFooter: "Names and jargon added here are sent as context so they are recognized.",
+                            filledFooter: { "\($0) term\($0 == 1 ? "" : "s") sent as context with every transcription." }
+                        )
                     }
 
                     section("Device") {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack(spacing: 8) {
-                                NeoTag(text: link.isConnected ? "CONNECTED" : "NOT CONNECTED", fill: link.isConnected ? Neo.green : Neo.redSoft)
+                                NeoTag(text: link.isConnected ? "Connected" : "Not connected", fill: link.isConnected ? Neo.green : Neo.redSoft)
                                 if let battery = link.battery {
                                     NeoTag(text: "\(battery)%", fill: Neo.card)
                                 }
@@ -95,7 +93,7 @@ struct SettingsView: View {
                                 HStack {
                                     Text("Reset moods on device")
                                     if link.pendingReset {
-                                        NeoTag(text: "PENDING", fill: Neo.yellow)
+                                        NeoTag(text: "Pending", fill: Neo.yellow)
                                     }
                                 }
                             }
@@ -111,12 +109,6 @@ struct SettingsView: View {
 
                     section("Mood icons") {
                         VStack(alignment: .leading, spacing: 12) {
-                            Picker("Conversion", selection: $conversionMode) {
-                                ForEach(BitmapConverter.Mode.allCases) { mode in
-                                    Text(mode.label).tag(mode)
-                                }
-                            }
-                            .pickerStyle(.segmented)
                             ForEach(1...MoodIcons.count, id: \.self) { mood in
                                 iconRow(mood)
                             }
@@ -127,11 +119,6 @@ struct SettingsView: View {
                                 }
                                 .buttonStyle(NeoButtonStyle(fill: Neo.red))
                             }
-                            if let conversionError {
-                                Text(conversionError)
-                                    .font(.footnote.weight(.bold))
-                                    .foregroundStyle(Neo.red)
-                            }
                             footer(icons.deviceInSync ? "Device has the current icon set." : "Icons will be sent to the device on next connection.")
                         }
                     }
@@ -141,18 +128,9 @@ struct SettingsView: View {
             }
         }
         .background(Neo.paper.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
         .tint(Neo.ink)
         .scrollDismissesKeyboard(.interactively)
-        .photosPicker(isPresented: Binding(get: { pickingMood != 0 }, set: { if !$0 { pickingMood = 0 } }), selection: $pickedItem, matching: .images)
-        .onChange(of: pickedItem) { _, item in
-            guard let item, pickingMood != 0 else { return }
-            let mood = pickingMood
-            Task {
-                await importImage(item, mood: mood)
-                pickedItem = nil
-                pickingMood = 0
-            }
-        }
     }
 
     private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -169,7 +147,43 @@ struct SettingsView: View {
     private func footer(_ text: String) -> some View {
         Text(text)
             .font(.footnote)
-            .foregroundStyle(Neo.muted)
+            .foregroundStyle(Neo.ink)
+    }
+
+    private func tokenEditor(
+        placeholder: String,
+        text: Binding<String>,
+        tokens: [String],
+        capitalize: TextInputAutocapitalization,
+        add: @escaping () -> Void,
+        remove: @escaping (String) -> Void,
+        emptyFooter: String,
+        filledFooter: (Int) -> String
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                TextField(placeholder, text: text)
+                    .textInputAutocapitalization(capitalize)
+                    .autocorrectionDisabled()
+                    .submitLabel(.done)
+                    .neoField()
+                    .onSubmit(add)
+                Button("Add", action: add)
+                    .buttonStyle(NeoButtonStyle(fill: Neo.red, shadow: 2))
+                    .disabled(text.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .opacity(text.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty ? 0.5 : 1)
+            }
+            if !tokens.isEmpty {
+                FlowLayout(spacing: 8) {
+                    ForEach(tokens, id: \.self) { token in
+                        termChip(token) {
+                            remove(token)
+                        }
+                    }
+                }
+            }
+            footer(tokens.isEmpty ? emptyFooter : filledFooter(tokens.count))
+        }
     }
 
     private func addTerm() {
@@ -177,20 +191,25 @@ struct SettingsView: View {
         newTerm = ""
     }
 
-    private func termChip(_ term: String) -> some View {
+    private func addHint() {
+        settings.addLanguage(newHint)
+        newHint = ""
+    }
+
+    private func termChip(_ term: String, remove: @escaping () -> Void) -> some View {
         HStack(spacing: 6) {
             Text(term)
                 .font(.subheadline.weight(.bold))
                 .lineLimit(1)
             Button {
                 withAnimation(.easeOut(duration: 0.15)) {
-                    settings.removeTerm(term)
+                    remove()
                 }
             } label: {
                 Image(systemName: "xmark")
                     .font(.caption.weight(.black))
                     .frame(width: 20, height: 20)
-                    .background(Circle().fill(Neo.red).overlay(Circle().strokeBorder(Neo.ink, lineWidth: 1.5)))
+                    .background(Circle().fill(Neo.red).overlay(Circle().strokeBorder(Neo.ink, lineWidth: Neo.chipBorder)))
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Remove \(term)")
@@ -199,22 +218,14 @@ struct SettingsView: View {
         .padding(.leading, 10)
         .padding(.trailing, 6)
         .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: Neo.radius)
-                .fill(Neo.greenSoft)
-                .overlay(RoundedRectangle(cornerRadius: Neo.radius).strokeBorder(Neo.ink, lineWidth: 1.5))
-        )
+        .neoChip(Neo.greenSoft)
     }
 
     private func iconRow(_ mood: Int) -> some View {
         HStack(spacing: 12) {
             MoodGlyph(mood: mood, size: 36)
                 .padding(4)
-                .background(
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Neo.card)
-                        .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Neo.ink, lineWidth: 1.5))
-                )
+                .neoChip()
             VStack(alignment: .leading, spacing: 2) {
                 Text("Mood \(mood)")
                     .font(.subheadline.weight(.heavy))
@@ -224,8 +235,8 @@ struct SettingsView: View {
                     .foregroundStyle(Neo.muted)
             }
             Spacer()
-            Button("Replace") {
-                pickingMood = mood
+            NavigationLink(value: MoodIconDestination(mood: mood)) {
+                Text("Edit")
             }
             .buttonStyle(NeoButtonStyle(fill: Neo.card, shadow: 2))
             if icons.isCustom(mood) {
@@ -238,19 +249,5 @@ struct SettingsView: View {
                 .buttonStyle(NeoIconButtonStyle(fill: Neo.card, size: 36))
             }
         }
-    }
-
-    private func importImage(_ item: PhotosPickerItem, mood: Int) async {
-        guard let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) else {
-            conversionError = "Could not load that image"
-            return
-        }
-        guard let bitmap = BitmapConverter.bitmap(from: image, mode: conversionMode) else {
-            conversionError = "Could not convert that image"
-            return
-        }
-        conversionError = nil
-        icons.setOverride(bitmap, for: mood)
-        link.iconsChanged()
     }
 }

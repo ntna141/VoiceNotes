@@ -18,7 +18,7 @@ struct NoteRow: View {
                 HStack(spacing: 6) {
                     NeoTag(text: NoteSections.rowDate(note.createdAt), fill: Neo.card)
                     if note.hasAudio {
-                        NeoTag(text: "AUDIO", fill: statusFill)
+                        NeoTag(text: "Audio", fill: statusFill)
                     }
                     if note.transcription.isPending {
                         ProgressView()
@@ -31,11 +31,7 @@ struct NoteRow: View {
             if mood != 0 {
                 MoodGlyph(mood: mood, size: 28)
                     .padding(4)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Neo.greenSoft)
-                            .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Neo.ink, lineWidth: 1.5))
-                    )
+                    .neoChip(Neo.greenSoft)
             }
         }
         .padding(12)

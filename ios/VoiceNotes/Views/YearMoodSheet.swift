@@ -4,6 +4,7 @@ import SwiftUI
 struct YearMoodSheet: View {
     let initialDayKey: String
     let onOpenNote: (Note) -> Void
+    let onOpenCanvas: (String) -> Void
 
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
@@ -14,9 +15,10 @@ struct YearMoodSheet: View {
 
     private let calendar = Calendar.current
 
-    init(initialDayKey: String, onOpenNote: @escaping (Note) -> Void) {
+    init(initialDayKey: String, onOpenNote: @escaping (Note) -> Void, onOpenCanvas: @escaping (String) -> Void) {
         self.initialDayKey = initialDayKey
         self.onOpenNote = onOpenNote
+        self.onOpenCanvas = onOpenCanvas
         _selectedDayKey = State(initialValue: initialDayKey)
         _year = State(initialValue: Int(initialDayKey.prefix(4)) ?? Calendar.current.component(.year, from: Date()))
     }
@@ -110,9 +112,6 @@ struct YearMoodSheet: View {
                         selectedDayKey = key
                     } label: {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(cellFill(key: key, today: today))
-                                .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Neo.ink, lineWidth: key == selectedDayKey ? 2.5 : 1.5))
                             if let mood = moodByDay[key], mood != 0 {
                                 MoodGlyph(mood: mood, size: 22)
                             } else {
@@ -121,7 +120,9 @@ struct YearMoodSheet: View {
                                     .foregroundStyle(Neo.muted)
                             }
                         }
+                        .frame(maxWidth: .infinity)
                         .frame(height: 36)
+                        .neoChip(cellFill(key: key, today: today), border: key == selectedDayKey ? 2.5 : Neo.chipBorder)
                         .opacity(future ? 0.3 : 1)
                     }
                     .buttonStyle(.plain)
@@ -157,17 +158,27 @@ struct YearMoodSheet: View {
                 link.moodsChanged()
             }
             .frame(maxWidth: .infinity)
-            Button {
-                addEntry()
-            } label: {
-                HStack {
-                    Image(systemName: "square.and.pencil")
-                    Text("Add entry")
+            HStack(spacing: 10) {
+                Button {
+                    addEntry()
+                } label: {
+                    HStack {
+                        Image(systemName: "square.and.pencil")
+                        Text("Add entry")
+                    }
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: .infinity)
+                .buttonStyle(NeoButtonStyle(fill: Neo.red))
+                .accessibilityLabel("New Note")
+                Button {
+                    onOpenCanvas(selectedDayKey)
+                } label: {
+                    Image(systemName: "photo.on.rectangle.angled")
+                }
+                .buttonStyle(NeoIconButtonStyle(fill: Neo.yellow, size: 42))
+                .accessibilityLabel("Photo page")
             }
-            .buttonStyle(NeoButtonStyle(fill: Neo.red))
-            .accessibilityLabel("New Note")
+            .padding(.trailing, Neo.shadow)
         }
         .padding(16)
         .frame(maxWidth: .infinity)

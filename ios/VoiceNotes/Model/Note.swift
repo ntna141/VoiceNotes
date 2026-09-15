@@ -98,7 +98,7 @@ final class Note {
     }
 
     func setTranscript(_ text: String) {
-        body = text
+        body = body.isEmpty ? text : body + "\n\n" + text
         if title.isEmpty {
             let firstLine = text.split(separator: "\n", omittingEmptySubsequences: true).first.map(String.init) ?? text
             let sentence = firstLine.split(whereSeparator: { ".!?".contains($0) }).first.map(String.init) ?? firstLine
