@@ -16,7 +16,7 @@ class Button {
   ButtonEvent update();
   bool isDown() const;
   bool pressed() const { return _down; }
-  void reset();
+  void reset(bool wakePress = false);
 
  private:
   uint8_t _pin;

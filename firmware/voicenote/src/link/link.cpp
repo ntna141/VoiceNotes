@@ -23,6 +23,7 @@ const uint8_t StreamDescriptor[] = {
 
 bool justConnected = false;
 bool justDisconnected = false;
+bool activity = false;
 bool homePending = false;
 HomeData pendingHome;
 bool pagePending = false;
@@ -46,6 +47,7 @@ bool closedAcked = false;
 
 void onConnect() {
   justConnected = true;
+  activity = true;
 }
 
 void onDisconnect() {
@@ -58,6 +60,7 @@ void onStreamClosed(bool acked) {
 }
 
 void onReceive(const EasyBLEMessage& message) {
+  activity = true;
   if (message.type == EasyBLEMessageType::Image) {
     Page parsed;
     uint32_t utc = 0;
@@ -144,6 +147,14 @@ bool linkJustDisconnected() {
   return true;
 }
 
+bool linkTakeActivity() {
+  if (!activity) {
+    return false;
+  }
+  activity = false;
+  return true;
+}
+
 void linkLowPower(bool enabled) {
   EasyBLE.setLowPower(enabled);
 }
@@ -164,7 +175,9 @@ bool linkSendHello(int batteryPercent, const Page& page) {
   }
   n += snprintf(text + n, sizeof(text) - n, "\n%lu\n%lu\n", static_cast<unsigned long>(valid ? page.dirty : 0),
                 static_cast<unsigned long>(iconsHash()));
-  return EasyBLE.sendText(text);
+  const bool sent = EasyBLE.sendText(text);
+  activity |= sent;
+  return sent;
 }
 
 bool linkTakeIcons(IconSet& set, bool& reset) {

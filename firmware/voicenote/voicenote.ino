@@ -68,6 +68,14 @@ void restDisplay() {
   displayReady = false;
 }
 
+void goToSleep() {
+  Serial.println("sleep");
+  restDisplay();
+  linkEnd();
+  Serial.flush();
+  powerDeepSleep(timeSecondsUntilLocalMidnight());
+}
+
 void showHome(bool full = false) {
   ensureDisplay();
   lastActivityAt = millis();
@@ -349,7 +357,7 @@ void loopHome(ButtonEvent rec, ButtonEvent top) {
     sendHello();
   }
   if (millis() - lastActivityAt >= IDLE_AWAKE_MS && !linkStreamEnabled()) {
-    restDisplay();
+    goToSleep();
   }
 }
 
@@ -496,23 +504,30 @@ void setup() {
   homeLoad(home);
   pageLoad(page);
   iconsLoad();
-  recButton.reset();
-  topButton.reset();
+  const WakeCause wake = powerWakeCause();
+  recButton.reset(wake == WakeCause::Button);
+  topButton.reset(wake == WakeCause::Button);
+  batteryLogSample();
   battery = batteryPercent();
 
-  Serial.printf("\nVoiceNote %s bat=%d%% %dmV psram=%u KB\n", FW_VERSION, battery, batteryMillivolts(),
-                static_cast<unsigned>(ESP.getFreePsram() / 1024));
+  Serial.printf("\nVoiceNote %s wake=%d bat=%d%% %dmV psram=%u KB\n", FW_VERSION, static_cast<int>(wake), battery,
+                batteryMillivolts(), static_cast<unsigned>(ESP.getFreePsram() / 1024));
   batteryLogPrint();
 
   linkBegin();
-  enter(State::Home);
+  if (wake == WakeCause::Cold) {
+    enter(State::Home);
+  } else {
+    state = State::Home;
+    lastActivityAt = millis();
+  }
 }
 
 void loop() {
   linkUpdate();
   const ButtonEvent rec = recButton.update();
   const ButtonEvent top = topButton.update();
-  if (rec != ButtonEvent::None || top != ButtonEvent::None) {
+  if (rec != ButtonEvent::None || top != ButtonEvent::None || linkTakeActivity()) {
     lastActivityAt = millis();
   }
   const bool busy = state == State::Connecting || state == State::Recording || state == State::Ending || micRunning();

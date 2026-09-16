@@ -62,3 +62,11 @@ bool timeLocalDate(uint16_t& year, uint8_t& month, uint8_t& day, uint8_t& weekda
   weekday = static_cast<uint8_t>(parts.tm_wday);
   return month >= 1 && month <= 12 && day >= 1 && day <= 31;
 }
+
+uint32_t timeSecondsUntilLocalMidnight() {
+  if (!timeSynced()) {
+    return 0;
+  }
+  const uint32_t local = timeNow() + static_cast<int32_t>(storedTz) * 60;
+  return 86400UL - (local % 86400UL) + 1;
+}

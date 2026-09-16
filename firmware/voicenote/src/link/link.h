@@ -13,6 +13,7 @@ void linkUpdate();
 bool linkConnected();
 bool linkJustConnected();
 bool linkJustDisconnected();
+bool linkTakeActivity();
 void linkLowPower(bool enabled);
 
 bool linkSendHello(int batteryPercent, const Page& page);

@@ -10,9 +10,10 @@ bool Button::isDown() const {
   return digitalRead(_pin) == LOW;
 }
 
-void Button::reset() {
+void Button::reset(bool wakePress) {
   _down = isDown();
-  _holdFired = _down;
+  _holdFired = _down && !wakePress;
+  _pressedAt = 0;
   _clicks = 0;
   _changedAt = millis();
 }

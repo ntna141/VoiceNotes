@@ -2,12 +2,21 @@
 
 #include <Arduino.h>
 #include <Preferences.h>
+#include <driver/gpio.h>
+#include <driver/rtc_io.h>
+#include <esp_sleep.h>
 #include <string.h>
 
 #include "../../config.h"
 #include "../bsp/board_power_bsp.h"
+#include "../clock/clock.h"
 
 namespace {
+
+const gpio_num_t HeldPins[] = {VBAT_HOLD_PIN, EPD_PWR_PIN, AUDIO_PWR_PIN};
+const gpio_num_t WakePins[] = {BTN_REC_PIN, BTN_TOP_PIN};
+
+RTC_DATA_ATTR uint32_t lastBatterySampleUtc = 0;
 
 constexpr char LogNamespace[] = "batlog";
 constexpr char LogKey[] = "log";
@@ -48,6 +57,10 @@ void batteryLogLoad() {
 }  // namespace
 
 void powerBegin() {
+  gpio_deep_sleep_hold_dis();
+  for (gpio_num_t pin : HeldPins) {
+    gpio_hold_dis(pin);
+  }
   gpio_set_level(VBAT_HOLD_PIN, 1);
   gpio_set_level(EPD_PWR_PIN, 1);
   gpio_set_level(AUDIO_PWR_PIN, 1);
@@ -61,6 +74,35 @@ void powerBegin() {
   pinMode(BTN_TOP_PIN, INPUT_PULLUP);
   powerSetBoost(false);
   batteryLogLoad();
+}
+
+WakeCause powerWakeCause() {
+  switch (esp_sleep_get_wakeup_cause()) {
+    case ESP_SLEEP_WAKEUP_EXT1:
+      return WakeCause::Button;
+    case ESP_SLEEP_WAKEUP_TIMER:
+      return WakeCause::Timer;
+    default:
+      return WakeCause::Cold;
+  }
+}
+
+void powerDeepSleep(uint32_t timerSeconds) {
+  uint64_t mask = 0;
+  for (gpio_num_t pin : WakePins) {
+    rtc_gpio_pullup_en(pin);
+    rtc_gpio_pulldown_dis(pin);
+    mask |= 1ULL << pin;
+  }
+  esp_sleep_enable_ext1_wakeup(mask, ESP_EXT1_WAKEUP_ANY_LOW);
+  if (timerSeconds > 0) {
+    esp_sleep_enable_timer_wakeup(static_cast<uint64_t>(timerSeconds) * 1000000ULL);
+  }
+  for (gpio_num_t pin : HeldPins) {
+    gpio_hold_en(pin);
+  }
+  gpio_deep_sleep_hold_en();
+  esp_deep_sleep_start();
 }
 
 void powerDisplayOn() {
@@ -115,6 +157,11 @@ int batteryPercent() {
 }
 
 void batteryLogSample() {
+  const uint32_t now = timeNow();
+  if (lastBatterySampleUtc != 0 && now - lastBatterySampleUtc < BATTERY_CHECK_MS / 1000UL) {
+    return;
+  }
+  lastBatterySampleUtc = now;
   batteryLog.mv[batteryLog.next] = static_cast<uint16_t>(batteryMillivolts());
   batteryLog.next = (batteryLog.next + 1) % LogSize;
   if (batteryLog.count < LogSize) {
