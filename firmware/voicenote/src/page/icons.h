@@ -16,3 +16,4 @@ void iconsSave(const IconSet& set);
 void iconsReset();
 void iconsLoad();
 const uint8_t* iconFor(uint8_t mood);
+uint32_t iconsHash();

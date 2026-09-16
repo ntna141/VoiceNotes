@@ -69,3 +69,15 @@ const uint8_t* iconFor(uint8_t mood) {
   }
   return customLoaded ? customSet.icons[mood - 1] : MoodIcons[mood - 1];
 }
+
+uint32_t iconsHash() {
+  uint32_t hash = 2166136261u;
+  for (uint8_t mood = 1; mood <= PageMoodCount; ++mood) {
+    const uint8_t* icon = iconFor(mood);
+    for (int i = 0; i < PageIconBytes; ++i) {
+      hash ^= icon[i];
+      hash *= 16777619u;
+    }
+  }
+  return hash;
+}

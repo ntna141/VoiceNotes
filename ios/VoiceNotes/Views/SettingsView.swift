@@ -79,17 +79,17 @@ struct SettingsView: View {
                                 .buttonStyle(NeoButtonStyle(fill: Neo.red))
                             }
                             Button {
-                                link.resetMoodsOnDevice()
+                                link.resetDevice()
                             } label: {
                                 HStack {
-                                    Text("Reset moods on device")
+                                    Text("Reset device from phone")
                                     if link.pendingReset {
                                         NeoTag(text: "Pending", fill: Neo.yellow)
                                     }
                                 }
                             }
                             .buttonStyle(NeoButtonStyle(fill: Neo.yellow))
-                            footer("Pushes this month from the phone to the device, overriding what the device has.")
+                            footer("Overwrites the device with the phone's clock, this month's moods, and the current icons. Normally everything syncs on its own whenever the device connects.")
                             if let error = link.lastError {
                                 Text(error)
                                     .font(.footnote.weight(.bold))
@@ -110,7 +110,7 @@ struct SettingsView: View {
                                 }
                                 .buttonStyle(NeoButtonStyle(fill: Neo.red))
                             }
-                            footer(icons.deviceInSync ? "Device has the current icon set." : "Icons will be sent to the device on next connection.")
+                            footer(link.iconsInSync ? "Device has the current icon set." : "Icons will be sent to the device on next connection.")
                         }
                     }
                 }

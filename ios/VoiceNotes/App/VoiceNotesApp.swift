@@ -6,13 +6,37 @@ struct VoiceNotesApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @Environment(\.scenePhase) private var scenePhase
 
-    private let container: ModelContainer
-    private let settings: AppSettings
-    private let icons: MoodIconStore
-    private let link: DeviceLink
-    private let transcription: TranscriptionService
+    var body: some Scene {
+        WindowGroup {
+            NotesListView()
+                .environment(appDelegate.settings)
+                .environment(appDelegate.icons)
+                .environment(appDelegate.link)
+                .environment(appDelegate.transcription)
+        }
+        .modelContainer(appDelegate.container)
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .active:
+                appDelegate.transcription.appWillEnterForeground()
+                Task { await appDelegate.container.mainContext.importSharedPhotos() }
+            case .background:
+                appDelegate.transcription.appDidEnterBackground()
+            default:
+                break
+            }
+        }
+    }
+}
 
-    init() {
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    let container: ModelContainer
+    let settings: AppSettings
+    let icons: MoodIconStore
+    let link: DeviceLink
+    let transcription: TranscriptionService
+
+    override init() {
         let schema = Schema([Note.self, DayMood.self, DayCanvas.self, CanvasItem.self])
         let inMemory = ProcessInfo.processInfo.arguments.contains("-seed")
         container = try! ModelContainer(for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: inMemory, groupContainer: .none)])
@@ -21,6 +45,7 @@ struct VoiceNotesApp: App {
         icons = MoodIconStore()
         link = DeviceLink(context: context, icons: icons)
         transcription = TranscriptionService(context: context, settings: settings)
+        super.init()
         link.onRecordingFinished = { [transcription] note in
             transcription.enqueue(note)
         }
@@ -38,31 +63,7 @@ struct VoiceNotesApp: App {
         #endif
     }
 
-    var body: some Scene {
-        WindowGroup {
-            NotesListView()
-                .environment(settings)
-                .environment(icons)
-                .environment(link)
-                .environment(transcription)
-        }
-        .modelContainer(container)
-        .onChange(of: scenePhase) { _, phase in
-            switch phase {
-            case .active:
-                transcription.appWillEnterForeground()
-                Task { await container.mainContext.importSharedPhotos() }
-            case .background:
-                transcription.appDidEnterBackground()
-            default:
-                break
-            }
-        }
-    }
-}
-
-final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String, completionHandler: @escaping () -> Void) {
-        TranscriptionService.shared?.setBackgroundEventsHandler(completionHandler)
+        transcription.setBackgroundEventsHandler(completionHandler)
     }
 }

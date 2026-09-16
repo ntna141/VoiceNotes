@@ -118,11 +118,15 @@ void epaper_driver_display::spi_port_init() {
   	ESP_ERROR_CHECK(ret);
 }
 
+void voicenoteBusyYield() __attribute__((weak));
+void voicenoteBusyYield() {}
+
 void epaper_driver_display::read_busy() {
     int busy = lcd_spi_data.busy;
     while(gpio_get_level((gpio_num_t)busy) == 1) 
 	{
-        vTaskDelay(pdMS_TO_TICKS(5));   //LOW: idle, HIGH: busy
+        voicenoteBusyYield();
+        vTaskDelay(pdMS_TO_TICKS(5));
     }
 }
 

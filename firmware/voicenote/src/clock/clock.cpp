@@ -45,18 +45,20 @@ uint32_t timeNow() {
   return static_cast<uint32_t>(time(nullptr));
 }
 
-uint32_t timeSecondsToMidnight() {
+bool timeSynced() {
+  return timeMagic == Magic;
+}
+
+bool timeLocalDate(uint16_t& year, uint8_t& month, uint8_t& day, uint8_t& weekday) {
   if (!timeSynced()) {
-    return 0;
+    return false;
   }
   const time_t local = static_cast<time_t>(timeNow()) + static_cast<time_t>(storedTz) * 60;
   struct tm parts = {};
   gmtime_r(&local, &parts);
-  const int elapsed = parts.tm_hour * 3600 + parts.tm_min * 60 + parts.tm_sec;
-  const uint32_t left = static_cast<uint32_t>(86400 - elapsed);
-  return left == 0 ? 86400 : left;
-}
-
-bool timeSynced() {
-  return timeMagic == Magic;
+  year = static_cast<uint16_t>(parts.tm_year + 1900);
+  month = static_cast<uint8_t>(parts.tm_mon + 1);
+  day = static_cast<uint8_t>(parts.tm_mday);
+  weekday = static_cast<uint8_t>(parts.tm_wday);
+  return month >= 1 && month <= 12 && day >= 1 && day <= 31;
 }

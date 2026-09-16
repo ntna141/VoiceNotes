@@ -155,7 +155,7 @@ struct YearMoodSheet: View {
                 .foregroundStyle(Neo.ink)
             MoodPickerRow(selected: moodByDay[selectedDayKey] ?? 0, size: 28) { mood in
                 context.setMood(mood, for: selectedDayKey)
-                link.moodsChanged()
+                link.moodChanged(mood, for: selectedDayKey)
             }
             .frame(maxWidth: .infinity)
             HStack(spacing: 10) {

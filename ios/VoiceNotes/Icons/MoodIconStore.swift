@@ -5,7 +5,6 @@ import UIKit
 @Observable
 final class MoodIconStore {
     private(set) var overrides: [[UInt8]?] = Array(repeating: nil, count: MoodIcons.count)
-    private(set) var deviceInSync = true
     @ObservationIgnored private let imageCache = NSCache<NSNumber, UIImage>()
 
     func image(for mood: Int) -> UIImage? {
@@ -48,23 +47,28 @@ final class MoodIconStore {
         (1...MoodIcons.count).map { glyph(for: $0) ?? MoodIcons.defaults[$0 - 1] }
     }
 
+    var hash: UInt32 {
+        var hash: UInt32 = 2_166_136_261
+        for icon in deviceSet {
+            for byte in icon {
+                hash ^= UInt32(byte)
+                hash = hash &* 16_777_619
+            }
+        }
+        return hash
+    }
+
     func setOverride(_ bitmap: [UInt8]?, for mood: Int) {
         guard (1...MoodIcons.count).contains(mood) else { return }
         overrides[mood - 1] = bitmap
         imageCache.removeObject(forKey: NSNumber(value: mood))
-        deviceInSync = false
         save()
     }
 
     func resetAll() {
         overrides = Array(repeating: nil, count: MoodIcons.count)
         imageCache.removeAllObjects()
-        deviceInSync = false
         save()
-    }
-
-    func markSynced() {
-        deviceInSync = true
     }
 
     private func load() {

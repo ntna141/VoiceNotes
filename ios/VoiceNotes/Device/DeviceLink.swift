@@ -10,7 +10,9 @@ struct DeviceHello {
     var year: Int
     var month: Int
     var day: Int
-    var mood: Int
+    var moods: [Int] = []
+    var dirty: UInt32 = 0
+    var iconHash: UInt32?
 
     init?(_ text: String) {
         let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
@@ -20,20 +22,26 @@ struct DeviceHello {
         year = lines.count > 3 ? Int(lines[3]) ?? 0 : 0
         month = lines.count > 4 ? Int(lines[4]) ?? 0 : 0
         day = lines.count > 5 ? Int(lines[5]) ?? 0 : 0
-        mood = lines.count > 6 ? Int(lines[6]) ?? 0 : 0
+        let raw = lines.count > 6 ? lines[6] : ""
+        if raw.count == PageEncoder.maxDays, raw.allSatisfy(\.isNumber) {
+            moods = raw.map { Int(String($0)) ?? 0 }
+        }
+        dirty = lines.count > 7 ? UInt32(lines[7]) ?? 0 : 0
+        iconHash = lines.count > 8 ? UInt32(lines[8]) : nil
     }
 
-    var dayKey: String? {
-        guard year > 0, month > 0, day > 0 else { return nil }
-        return DayKey.make(year: year, month: month, day: day)
+    var hasPage: Bool {
+        year > 0 && month > 0 && day > 0 && moods.count == PageEncoder.maxDays
+    }
+
+    var dirtyDays: [Int] {
+        (1...PageEncoder.maxDays).filter { dirty & (1 << ($0 - 1)) != 0 }
     }
 }
 
 @Observable
 final class DeviceLink {
     static let deviceName = "VoiceNote"
-    private static let lastSentDayKey = "lastSentTodayMood.dayKey"
-    private static let lastSentMoodKey = "lastSentTodayMood.value"
 
     private(set) var isConnected = false
     private(set) var battery: Int?
@@ -41,14 +49,26 @@ final class DeviceLink {
     private(set) var lastHelloAt: Date?
     private(set) var isRecording = false
     private(set) var pendingReset = false
+    private(set) var deviceIconHash: UInt32?
     var lastError: String?
 
     var onRecordingFinished: ((Note) -> Void)?
 
+    var iconsInSync: Bool {
+        deviceIconHash == icons.hash
+    }
+
+    private enum Outbound: Equatable {
+        case time
+        case page
+        case icons
+        case mood(day: Int)
+    }
+
     private let ble = EasyBLE()
     private let context: ModelContext
     private let icons: MoodIconStore
-    private var outgoing: [(EasyBLEMessageType, Data)] = []
+    private var outgoing: [(kind: Outbound, data: Data)] = []
     private var recordingTask: Task<Void, Never>?
     private var activeChannel: EasyBLEIncomingChannel?
 
@@ -79,10 +99,12 @@ final class DeviceLink {
         }
     }
 
-    func moodsChanged() {
-        if isConnected {
-            pushPage()
-        }
+    func moodChanged(_ mood: Int, for dayKey: String) {
+        guard isConnected else { return }
+        let parts = dayKey.split(separator: "-").compactMap { Int($0) }
+        let now = Calendar.current.dateComponents([.year, .month], from: Date())
+        guard parts.count == 3, parts[0] == now.year, parts[1] == now.month else { return }
+        enqueue(.mood(day: parts[2]), PageEncoder.mood(year: parts[0], month: parts[1], day: parts[2], mood: mood))
     }
 
     func iconsChanged() {
@@ -91,10 +113,10 @@ final class DeviceLink {
         }
     }
 
-    func resetMoodsOnDevice() {
+    func resetDevice() {
         if isConnected {
-            pushPage()
             pendingReset = false
+            pushAll(force: true)
         } else {
             pendingReset = true
         }
@@ -102,10 +124,7 @@ final class DeviceLink {
 
     private func connected() {
         isConnected = true
-        enqueue(.image, PageEncoder.time())
-        if icons.hasOverrides || !icons.deviceInSync {
-            pushIcons()
-        }
+        enqueue(.time, PageEncoder.time())
     }
 
     private func disconnected() {
@@ -123,51 +142,66 @@ final class DeviceLink {
         battery = hello.battery
         firmware = hello.firmware
         lastHelloAt = Date()
+        deviceIconHash = hello.iconHash
         if pendingReset {
             pendingReset = false
-        } else {
-            reconcile(hello)
+            pushAll(force: true)
+            return
+        }
+        reconcile(hello)
+        if !iconsInSync {
+            pushIcons()
+        }
+    }
+
+    private func reconcile(_ hello: DeviceHello) {
+        let now = Date()
+        let calendar = Calendar.current
+        let year = calendar.component(.year, from: now)
+        let month = calendar.component(.month, from: now)
+        let today = calendar.component(.day, from: now)
+        if hello.hasPage {
+            for day in hello.dirtyDays {
+                context.setMood(hello.moods[day - 1], for: DayKey.make(year: hello.year, month: hello.month, day: day))
+            }
+            if hello.dirty == 0, hello.year == year, hello.month == month, hello.day == today,
+               hello.moods == context.moods(year: year, month: month) {
+                return
+            }
         }
         pushPage()
     }
 
-    private func reconcile(_ hello: DeviceHello) {
-        guard hello.mood != 0, let dayKey = hello.dayKey, dayKey == DayKey.today else { return }
-        let defaults = UserDefaults.standard
-        let lastDay = defaults.string(forKey: Self.lastSentDayKey)
-        let lastMood = defaults.integer(forKey: Self.lastSentMoodKey)
-        if lastDay == dayKey && lastMood == hello.mood {
-            return
-        }
-        context.setMood(hello.mood, for: dayKey)
+    private func pushAll(force: Bool) {
+        enqueue(.time, PageEncoder.time())
+        pushIcons()
+        pushPage(force: force)
     }
 
-    private func pushPage() {
+    private func pushPage(force: Bool = false) {
         let now = Date()
         let calendar = Calendar.current
         let year = calendar.component(.year, from: now)
         let month = calendar.component(.month, from: now)
         let today = calendar.component(.day, from: now)
         let moods = context.moods(year: year, month: month)
-        enqueue(.image, PageEncoder.page(year: year, month: month, today: today, moods: moods, now: now, calendar: calendar))
-        let defaults = UserDefaults.standard
-        defaults.set(DayKey.today, forKey: Self.lastSentDayKey)
-        defaults.set(moods[today - 1], forKey: Self.lastSentMoodKey)
+        enqueue(.page, PageEncoder.page(year: year, month: month, today: today, moods: moods, force: force, now: now, calendar: calendar))
     }
 
     private func pushIcons() {
-        enqueue(.image, icons.hasOverrides ? PageEncoder.icons(icons.deviceSet) : PageEncoder.iconsReset())
-        icons.markSynced()
+        enqueue(.icons, icons.hasOverrides ? PageEncoder.icons(icons.deviceSet) : PageEncoder.iconsReset())
     }
 
-    private func enqueue(_ type: EasyBLEMessageType, _ data: Data) {
-        outgoing.append((type, data))
+    private func enqueue(_ kind: Outbound, _ data: Data) {
+        let inFlight = ble.isSending ? 1 : 0
+        outgoing = Array(outgoing.prefix(inFlight)) + outgoing.dropFirst(inFlight).filter { $0.kind != kind }
+        outgoing.append((kind, data))
         pump()
     }
 
     private func pump() {
         guard isConnected, !ble.isSending, let next = outgoing.first else { return }
-        if !ble.send(next.0, data: next.1) {
+        if !ble.send(.image, data: next.data) {
             outgoing.removeFirst()
             pump()
         }
@@ -175,7 +209,10 @@ final class DeviceLink {
 
     private func sendFinished(_ ok: Bool) {
         if !outgoing.isEmpty {
-            outgoing.removeFirst()
+            let sent = outgoing.removeFirst()
+            if sent.kind == .icons, ok {
+                deviceIconHash = icons.hash
+            }
         }
         if !ok {
             lastError = "Device rejected message"

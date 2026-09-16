@@ -12,10 +12,13 @@ void linkEnd();
 void linkUpdate();
 bool linkConnected();
 bool linkJustConnected();
+bool linkJustDisconnected();
+void linkLowPower(bool enabled);
 
 bool linkSendHello(int batteryPercent, const Page& page);
 bool linkTakeHome(HomeData& data);
-bool linkTakePage(Page& page, uint32_t& unixUtc, int16_t& tzMinutes);
+bool linkTakePage(Page& page, uint32_t& unixUtc, int16_t& tzMinutes, bool& force);
+bool linkTakeMood(uint16_t& year, uint8_t& month, uint8_t& day, uint8_t& mood);
 bool linkTakeTime(uint32_t& unixUtc, int16_t& tzMinutes);
 bool linkTakeIcons(IconSet& set, bool& reset);
 

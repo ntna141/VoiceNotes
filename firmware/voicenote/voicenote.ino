@@ -42,8 +42,12 @@ bool displayReady = false;
 uint32_t stateEnteredAt = 0;
 uint32_t lastActivityAt = 0;
 uint32_t lastScreenTickAt = 0;
+uint32_t lastClockCheckAt = 0;
+uint32_t lastBatteryCheckAt = 0;
 int battery = 0;
 uint8_t moodSelection = 3;
+bool helloNeeded = false;
+uint32_t redrawAt = 0;
 char errorMessage[24];
 
 void ensureDisplay() {
@@ -55,15 +59,33 @@ void ensureDisplay() {
   displayReady = true;
 }
 
-void showHome() {
+void restDisplay() {
+  if (!displayReady) {
+    return;
+  }
+  screen.sleep();
+  powerDisplayOff();
+  displayReady = false;
+}
+
+void showHome(bool full = false) {
   ensureDisplay();
+  lastActivityAt = millis();
+  lastBatteryCheckAt = millis();
   battery = batteryPercent();
+  if (!pageValid(page)) {
+    pageFromClock(page);
+  }
   if (pageValid(page)) {
     pageDraw(page, battery);
   } else {
-    screensDrawHome(home, battery);
+    screen.clear();
   }
-  screen.showPartial();
+  if (full) {
+    screen.showFull();
+  } else {
+    screen.showPartial();
+  }
 }
 
 void enter(State next) {
@@ -73,7 +95,6 @@ void enter(State next) {
   ensureDisplay();
   switch (state) {
     case State::Home:
-      lastActivityAt = millis();
       showHome();
       break;
     case State::Connecting:
@@ -101,9 +122,34 @@ void enter(State next) {
   }
 }
 
+void voicenoteBusyYield() {
+  linkUpdate();
+}
+
 void sendHello() {
-  if (linkConnected()) {
-    linkSendHello(battery, page);
+  if (!linkConnected()) {
+    helloNeeded = true;
+    return;
+  }
+  helloNeeded = !linkSendHello(battery, page);
+}
+
+void scheduleRedraw() {
+  if (state == State::Home || state == State::MoodPick) {
+    redrawAt = millis() + 200;
+  }
+}
+
+void maybeRedraw() {
+  if (redrawAt == 0 || millis() < redrawAt) {
+    return;
+  }
+  redrawAt = 0;
+  if (state == State::Home) {
+    showHome();
+  } else if (state == State::MoodPick) {
+    screensDrawMoodPick(moodSelection);
+    screen.showPartial();
   }
 }
 
@@ -124,58 +170,46 @@ void fail(const char* message) {
   enter(State::Error);
 }
 
-void goToSleep(uint32_t timerSeconds) {
-  Serial.printf("sleep timer=%lus\n", static_cast<unsigned long>(timerSeconds));
-  Serial.flush();
-#if DEV_NO_SLEEP
-  lastActivityAt = millis();
-  return;
-#endif
-  micStop();
-  linkEnd();
-  if (displayReady) {
-    screen.sleep();
+void handleClock() {
+  if (millis() - lastClockCheckAt < 1000) {
+    return;
   }
-  powerDisplayOff();
-  powerDeepSleep(timerSeconds);
+  lastClockCheckAt = millis();
+  uint16_t year = 0;
+  uint8_t month = 0;
+  uint8_t day = 0;
+  uint8_t weekday = 0;
+  if (!pageValid(page) || !timeLocalDate(year, month, day, weekday)) {
+    return;
+  }
+  if (page.year == year && page.month == month && page.today == day) {
+    return;
+  }
+  Page next = page;
+  if (!pageAdvanceDay(next) || next.year != year || next.month != month || next.today != day) {
+    pageFromClock(next);
+  }
+  page = next;
+  pageSave(page);
+  Serial.printf("day %u-%u-%u\n", page.year, page.month, page.today);
+  if (state == State::Home) {
+    showHome(true);
+  }
+  sendHello();
 }
 
-void onTimerWake() {
-  if (pageAdvanceDay(page)) {
-    pageSave(page);
+void handleBattery() {
+  if (millis() - lastBatteryCheckAt < BATTERY_CHECK_MS) {
+    return;
   }
-  ensureDisplay();
+  lastBatteryCheckAt = millis();
+  const int previous = battery;
+  batteryLogSample();
   battery = batteryPercent();
-  if (pageValid(page)) {
-    pageDraw(page, battery);
-  } else {
-    screensDrawHome(home, battery);
+  if ((battery < BATTERY_LOW_PERCENT) != (previous < BATTERY_LOW_PERCENT)) {
+    Serial.printf("battery %d%%\n", battery);
+    scheduleRedraw();
   }
-  screen.showFull();
-  goToSleep(timeSecondsToMidnight());
-}
-
-RecordMode detectWakeGesture() {
-  if (powerWakeReason() != WakeReason::RecButton) {
-    return RecordMode::None;
-  }
-  while (recButton.isDown()) {
-    if (millis() >= BTN_HOLD_MS) {
-      return RecordMode::Quick;
-    }
-    delay(5);
-  }
-  const uint32_t releasedAt = millis();
-  while (millis() - releasedAt < WAKE_GESTURE_WINDOW_MS) {
-    if (recButton.isDown()) {
-      delay(BTN_DEBOUNCE_MS);
-      if (recButton.isDown()) {
-        return RecordMode::FreeFlow;
-      }
-    }
-    delay(5);
-  }
-  return RecordMode::None;
 }
 
 void beginConnecting(RecordMode mode) {
@@ -210,28 +244,49 @@ void cancelRecording() {
 void handleLink() {
   if (linkJustConnected()) {
     Serial.println("phone connected");
+    helloNeeded = true;
+  }
+  if (linkJustDisconnected()) {
+    Serial.println("phone disconnected");
+  }
+  if (helloNeeded) {
     sendHello();
-    if (state == State::Home) {
-      showHome();
-    }
   }
 
   Page incomingPage;
   uint32_t utc = 0;
   int16_t tz = 0;
-  if (linkTakePage(incomingPage, utc, tz)) {
-    page = incomingPage;
+  bool force = false;
+  if (linkTakePage(incomingPage, utc, tz, force)) {
+    pageMerge(page, incomingPage, force);
     pageSave(page);
     timeApply(utc, tz);
-    Serial.printf("page %u-%u-%u mood=%u\n", page.year, page.month, page.today, pageTodayMood(page));
-    if (state == State::Home) {
-      showHome();
+    Serial.printf("page %u-%u-%u mood=%u dirty=%lu\n", page.year, page.month, page.today, pageTodayMood(page),
+                  static_cast<unsigned long>(page.dirty));
+    scheduleRedraw();
+    if (page.dirty != 0) {
+      sendHello();
     }
+  }
+
+  uint16_t moodYear = 0;
+  uint8_t moodMonth = 0;
+  uint8_t moodDay = 0;
+  uint8_t moodValue = 0;
+  if (linkTakeMood(moodYear, moodMonth, moodDay, moodValue) && pageSetMood(page, moodYear, moodMonth, moodDay, moodValue)) {
+    pageSave(page);
+    Serial.printf("mood %u-%u-%u=%u\n", moodYear, moodMonth, moodDay, moodValue);
+    scheduleRedraw();
   }
 
   if (linkTakeTime(utc, tz)) {
     timeApply(utc, tz);
     Serial.printf("time %lu tz=%d\n", static_cast<unsigned long>(utc), tz);
+    if (!pageValid(page) && pageFromClock(page)) {
+      pageSave(page);
+      scheduleRedraw();
+    }
+    sendHello();
   }
 
   IconSet incomingIcons;
@@ -243,12 +298,7 @@ void handleLink() {
       iconsSave(incomingIcons);
     }
     Serial.printf("icons %s\n", resetIcons ? "reset" : "saved");
-    if (state == State::Home) {
-      showHome();
-    } else if (state == State::MoodPick) {
-      screensDrawMoodPick(moodSelection);
-      screen.showPartial();
-    }
+    scheduleRedraw();
   }
 
   HomeData incoming;
@@ -256,9 +306,6 @@ void handleLink() {
     home = incoming;
     homeSave(home);
     Serial.printf("home: %u lines\n", home.count);
-    if (state == State::Home && !pageValid(page)) {
-      showHome();
-    }
   }
 }
 
@@ -302,7 +349,7 @@ void loopHome(ButtonEvent rec, ButtonEvent top) {
     sendHello();
   }
   if (millis() - lastActivityAt >= IDLE_AWAKE_MS && !linkStreamEnabled()) {
-    goToSleep(timeSecondsToMidnight());
+    restDisplay();
   }
 }
 
@@ -449,26 +496,16 @@ void setup() {
   homeLoad(home);
   pageLoad(page);
   iconsLoad();
-
-  if (powerWakeReason() == WakeReason::Timer) {
-    onTimerWake();
-  }
-
-  const RecordMode gesture = detectWakeGesture();
   recButton.reset();
   topButton.reset();
   battery = batteryPercent();
 
-  Serial.printf("\nVoiceNote %s wake=%d bat=%d%% psram=%u KB\n", FW_VERSION,
-                static_cast<int>(powerWakeReason()), battery,
+  Serial.printf("\nVoiceNote %s bat=%d%% %dmV psram=%u KB\n", FW_VERSION, battery, batteryMillivolts(),
                 static_cast<unsigned>(ESP.getFreePsram() / 1024));
+  batteryLogPrint();
 
   linkBegin();
-  if (gesture != RecordMode::None) {
-    beginConnecting(gesture);
-  } else {
-    enter(State::Home);
-  }
+  enter(State::Home);
 }
 
 void loop() {
@@ -478,7 +515,12 @@ void loop() {
   if (rec != ButtonEvent::None || top != ButtonEvent::None) {
     lastActivityAt = millis();
   }
+  const bool busy = state == State::Connecting || state == State::Recording || state == State::Ending || micRunning();
+  powerSetBoost(busy);
+  linkLowPower(!busy);
   handleLink();
+  handleClock();
+  handleBattery();
   handleMonitor();
   drainMic();
 
@@ -505,5 +547,6 @@ void loop() {
       loopMoodPick(rec, top);
       break;
   }
+  maybeRedraw();
   delay(2);
 }

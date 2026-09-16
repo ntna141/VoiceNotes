@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "../../config.h"
+#include "../clock/clock.h"
 #include "../display/screen.h"
 #include "../display/screens.h"
 #include "icons.h"
@@ -14,6 +15,7 @@ namespace {
 constexpr char Namespace[] = "voicenote";
 constexpr char KeyPage[] = "page";
 constexpr char PageTag[4] = {'p', 'a', 'g', 0};
+constexpr char MoodTag[4] = {'m', 'o', 'd', 0};
 
 uint32_t readU32(const uint8_t* p) {
   return static_cast<uint32_t>(p[0]) | (static_cast<uint32_t>(p[1]) << 8) |
@@ -46,7 +48,7 @@ bool iconBit(const uint8_t* icon, int x, int y) {
 }
 
 void drawDot(int16_t x, int16_t y) {
-  screen.fillCircle(x + 13, y + 13, 2, SCREEN_BLACK);
+  screen.fillRect(x + 12, y + 12, 2, 2, SCREEN_BLACK);
 }
 
 void drawToday(int16_t x, int16_t y) {
@@ -68,7 +70,7 @@ void pageBlitIcon(int16_t x, int16_t y, const uint8_t* icon) {
   }
 }
 
-bool pageParse(const uint8_t* data, size_t len, Page& page, uint32_t& unixUtc, int16_t& tzMinutes) {
+bool pageParse(const uint8_t* data, size_t len, Page& page, uint32_t& unixUtc, int16_t& tzMinutes, bool& force) {
   if (data == nullptr || len != PageWireBytes || memcmp(data, PageTag, 4) != 0) {
     return false;
   }
@@ -80,7 +82,8 @@ bool pageParse(const uint8_t* data, size_t len, Page& page, uint32_t& unixUtc, i
   page.today = data[13];
   page.firstWeekday = data[14];
   page.daysInMonth = data[15];
-  memcpy(page.moods, data + 16, PageMaxDays);
+  force = (data[16] & 0x01) != 0;
+  memcpy(page.moods, data + 17, PageMaxDays);
   if (!pageValid(page) || unixUtc == 0) {
     pageClear(page);
     return false;
@@ -90,6 +93,42 @@ bool pageParse(const uint8_t* data, size_t len, Page& page, uint32_t& unixUtc, i
       page.moods[i] = 0;
     }
   }
+  return true;
+}
+
+void pageMerge(Page& page, const Page& incoming, bool force) {
+  Page merged = incoming;
+  merged.dirty = 0;
+  if (!force && pageValid(page) && page.year == incoming.year && page.month == incoming.month) {
+    for (int i = 0; i < PageMaxDays; ++i) {
+      const uint32_t bit = 1u << i;
+      if ((page.dirty & bit) != 0 && page.moods[i] != incoming.moods[i]) {
+        merged.moods[i] = page.moods[i];
+        merged.dirty |= bit;
+      }
+    }
+  }
+  page = merged;
+}
+
+bool moodParse(const uint8_t* data, size_t len, uint16_t& year, uint8_t& month, uint8_t& day, uint8_t& mood) {
+  if (data == nullptr || len != MoodWireBytes || memcmp(data, MoodTag, 4) != 0) {
+    return false;
+  }
+  year = readU16(data + 4);
+  month = data[6];
+  day = data[7];
+  mood = data[8];
+  return month >= 1 && month <= 12 && day >= 1 && day <= PageMaxDays && mood <= PageMoodCount;
+}
+
+bool pageSetMood(Page& page, uint16_t year, uint8_t month, uint8_t day, uint8_t mood) {
+  if (!pageValid(page) || page.year != year || page.month != month || day < 1 || day > page.daysInMonth ||
+      mood > PageMoodCount) {
+    return false;
+  }
+  page.moods[day - 1] = mood;
+  page.dirty &= ~(1u << (day - 1));
   return true;
 }
 
@@ -119,6 +158,28 @@ bool pageLoad(Page& page) {
 
 void pageClear(Page& page) {
   memset(&page, 0, sizeof(page));
+}
+
+bool pageFromClock(Page& page) {
+  uint16_t year = 0;
+  uint8_t month = 0;
+  uint8_t day = 0;
+  uint8_t weekday = 0;
+  if (!timeLocalDate(year, month, day, weekday)) {
+    return false;
+  }
+  pageClear(page);
+  page.year = year;
+  page.month = month;
+  page.today = day;
+  page.daysInMonth = monthLength(year, month);
+  int first = static_cast<int>(weekday) - (static_cast<int>(day) - 1);
+  first %= 7;
+  if (first < 0) {
+    first += 7;
+  }
+  page.firstWeekday = static_cast<uint8_t>(first);
+  return pageValid(page);
 }
 
 void pageDraw(const Page& page, int batteryPercent) {
@@ -157,7 +218,7 @@ void pageDraw(const Page& page, int batteryPercent) {
       drawToday(x, y);
     }
   }
-  if (batteryPercent < 20) {
+  if (batteryPercent < BATTERY_LOW_PERCENT) {
     screensDrawLowBattery(EPD_WIDTH - 6 - 22, EPD_HEIGHT - 6 - 11);
   }
 }
@@ -179,6 +240,7 @@ bool pageAdvanceDay(Page& page) {
   page.daysInMonth = monthLength(page.year, page.month);
   page.today = 1;
   memset(page.moods, 0, sizeof(page.moods));
+  page.dirty = 0;
   return pageValid(page);
 }
 
@@ -194,6 +256,7 @@ void pageSetTodayMood(Page& page, uint8_t mood) {
     return;
   }
   page.moods[page.today - 1] = mood;
+  page.dirty |= 1u << (page.today - 1);
 }
 
 bool pageValid(const Page& page) {

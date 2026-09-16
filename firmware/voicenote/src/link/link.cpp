@@ -22,12 +22,19 @@ const uint8_t StreamDescriptor[] = {
 };
 
 bool justConnected = false;
+bool justDisconnected = false;
 bool homePending = false;
 HomeData pendingHome;
 bool pagePending = false;
 Page pendingPage;
 uint32_t pendingPageUtc = 0;
 int16_t pendingPageTz = 0;
+bool pendingPageForce = false;
+bool moodPending = false;
+uint16_t pendingMoodYear = 0;
+uint8_t pendingMoodMonth = 0;
+uint8_t pendingMoodDay = 0;
+uint8_t pendingMoodValue = 0;
 bool timePending = false;
 uint32_t pendingTimeUtc = 0;
 int16_t pendingTimeTz = 0;
@@ -41,6 +48,10 @@ void onConnect() {
   justConnected = true;
 }
 
+void onDisconnect() {
+  justDisconnected = true;
+}
+
 void onStreamClosed(bool acked) {
   closedPending = true;
   closedAcked = acked;
@@ -51,11 +62,17 @@ void onReceive(const EasyBLEMessage& message) {
     Page parsed;
     uint32_t utc = 0;
     int16_t tz = 0;
-    if (pageParse(message.data, message.length, parsed, utc, tz)) {
+    bool force = false;
+    if (pageParse(message.data, message.length, parsed, utc, tz, force)) {
       pendingPage = parsed;
       pendingPageUtc = utc;
       pendingPageTz = tz;
+      pendingPageForce = force;
       pagePending = true;
+      return;
+    }
+    if (moodParse(message.data, message.length, pendingMoodYear, pendingMoodMonth, pendingMoodDay, pendingMoodValue)) {
+      moodPending = true;
       return;
     }
     if (timeParse(message.data, message.length, utc, tz)) {
@@ -92,6 +109,7 @@ void onStreamRequested() {
 
 bool linkBegin() {
   EasyBLE.onConnect(onConnect);
+  EasyBLE.onDisconnect(onDisconnect);
   EasyBLE.onReceive(onReceive);
   EasyBLE.channel().onRequested(onStreamRequested);
   EasyBLE.channel().onClosed(onStreamClosed);
@@ -118,12 +136,34 @@ bool linkJustConnected() {
   return true;
 }
 
+bool linkJustDisconnected() {
+  if (!justDisconnected) {
+    return false;
+  }
+  justDisconnected = false;
+  return true;
+}
+
+void linkLowPower(bool enabled) {
+  EasyBLE.setLowPower(enabled);
+}
+
 bool linkSendHello(int batteryPercent, const Page& page) {
-  char text[64];
+  char text[128];
   const bool valid = pageValid(page);
-  snprintf(text, sizeof(text), "hello\n%d\n%s\n%u\n%u\n%u\n%u\n", batteryPercent, FW_VERSION,
-           valid ? page.year : 0, valid ? page.month : 0, valid ? page.today : 0,
-           pageTodayMood(page));
+  int n = snprintf(text, sizeof(text), "hello\n%d\n%s\n%u\n%u\n%u\n", batteryPercent, FW_VERSION,
+                   valid ? page.year : 0, valid ? page.month : 0, valid ? page.today : 0);
+  if (n < 0 || n + PageMaxDays + 24 > static_cast<int>(sizeof(text))) {
+    return false;
+  }
+  if (valid) {
+    for (int i = 0; i < PageMaxDays; ++i) {
+      const uint8_t mood = page.moods[i] > PageMoodCount ? 0 : page.moods[i];
+      text[n++] = static_cast<char>('0' + mood);
+    }
+  }
+  n += snprintf(text + n, sizeof(text) - n, "\n%lu\n%lu\n", static_cast<unsigned long>(valid ? page.dirty : 0),
+                static_cast<unsigned long>(iconsHash()));
   return EasyBLE.sendText(text);
 }
 
@@ -146,7 +186,7 @@ bool linkTakeHome(HomeData& data) {
   return true;
 }
 
-bool linkTakePage(Page& page, uint32_t& unixUtc, int16_t& tzMinutes) {
+bool linkTakePage(Page& page, uint32_t& unixUtc, int16_t& tzMinutes, bool& force) {
   if (!pagePending) {
     return false;
   }
@@ -154,6 +194,19 @@ bool linkTakePage(Page& page, uint32_t& unixUtc, int16_t& tzMinutes) {
   page = pendingPage;
   unixUtc = pendingPageUtc;
   tzMinutes = pendingPageTz;
+  force = pendingPageForce;
+  return true;
+}
+
+bool linkTakeMood(uint16_t& year, uint8_t& month, uint8_t& day, uint8_t& mood) {
+  if (!moodPending) {
+    return false;
+  }
+  moodPending = false;
+  year = pendingMoodYear;
+  month = pendingMoodMonth;
+  day = pendingMoodDay;
+  mood = pendingMoodValue;
   return true;
 }
 

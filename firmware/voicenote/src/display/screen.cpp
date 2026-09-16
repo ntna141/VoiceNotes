@@ -19,17 +19,18 @@ Screen screen;
 Screen::Screen() : Adafruit_GFX(EPD_WIDTH, EPD_HEIGHT) {}
 
 void Screen::begin(bool restorePrevious) {
-  custom_lcd_spi_t cfg = {};
-  cfg.cs = EPD_CS_PIN;
-  cfg.dc = EPD_DC_PIN;
-  cfg.rst = EPD_RST_PIN;
-  cfg.busy = EPD_BUSY_PIN;
-  cfg.mosi = EPD_MOSI_PIN;
-  cfg.scl = EPD_SCK_PIN;
-  cfg.spi_host = EPD_SPI_HOST;
-  cfg.buffer_len = FrameBytes;
-
-  _epd = new epaper_driver_display(EPD_WIDTH, EPD_HEIGHT, cfg);
+  if (_epd == nullptr) {
+    custom_lcd_spi_t cfg = {};
+    cfg.cs = EPD_CS_PIN;
+    cfg.dc = EPD_DC_PIN;
+    cfg.rst = EPD_RST_PIN;
+    cfg.busy = EPD_BUSY_PIN;
+    cfg.mosi = EPD_MOSI_PIN;
+    cfg.scl = EPD_SCK_PIN;
+    cfg.spi_host = EPD_SPI_HOST;
+    cfg.buffer_len = FrameBytes;
+    _epd = new epaper_driver_display(EPD_WIDTH, EPD_HEIGHT, cfg);
+  }
   _epd->EPD_Init();
   if (restorePrevious && savedFrameValid) {
     memcpy(_epd->getBuffer(), savedFrame, FrameBytes);
