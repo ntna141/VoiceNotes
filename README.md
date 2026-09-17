@@ -2,11 +2,9 @@
 
 A pocket e-ink device on an ESP32-S3 that records voice notes and logs a daily mood check-in, synced to an iPhone over BLE. No WiFi, no server, no account.
 
-<p align="center">
-  <img src="docs/images/recording.jpg" width="30%" alt="Hold to record: audio streams to the phone over BLE" />
-  <img src="docs/images/mood.jpg" width="30%" alt="Daily mood check-in synced to the phone" />
-  <img src="docs/images/mood-history.jpg" width="30%" alt="Mood history rendered on the e-ink display" />
-</p>
+![Hold to record on the device, the note and mood show up in the iPhone app, pairing goes through the system accessory picker](docs/images/hero.jpg)
+
+![Mood picked on the e-ink device, same mood on the phone's week strip](docs/images/mood-sync.jpg)
 
 ## Why BLE over WiFi for ESP32 devices?
 
