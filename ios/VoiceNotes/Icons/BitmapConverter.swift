@@ -24,28 +24,32 @@ enum BitmapConverter {
         let scale = 4
         let src = size * scale
         var pixels = [UInt8](repeating: 255, count: src * src * 4)
-        guard let ctx = CGContext(
-            data: &pixels,
-            width: src,
-            height: src,
-            bitsPerComponent: 8,
-            bytesPerRow: src * 4,
-            space: CGColorSpaceCreateDeviceRGB(),
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else { return nil }
-        ctx.setFillColor(red: 1, green: 1, blue: 1, alpha: 1)
-        ctx.fill(CGRect(x: 0, y: 0, width: src, height: src))
-        ctx.interpolationQuality = .high
-        let aspect = CGFloat(cg.width) / CGFloat(cg.height)
-        var rect = CGRect(x: 0, y: 0, width: src, height: src)
-        if aspect > 1 {
-            rect.size.height = CGFloat(src) / aspect
-            rect.origin.y = (CGFloat(src) - rect.height) / 2
-        } else if aspect < 1 {
-            rect.size.width = CGFloat(src) * aspect
-            rect.origin.x = (CGFloat(src) - rect.width) / 2
+        let drawn = pixels.withUnsafeMutableBytes { buffer -> Bool in
+            guard let ctx = CGContext(
+                data: buffer.baseAddress,
+                width: src,
+                height: src,
+                bitsPerComponent: 8,
+                bytesPerRow: src * 4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            ) else { return false }
+            ctx.setFillColor(red: 1, green: 1, blue: 1, alpha: 1)
+            ctx.fill(CGRect(x: 0, y: 0, width: src, height: src))
+            ctx.interpolationQuality = .high
+            let aspect = CGFloat(cg.width) / CGFloat(cg.height)
+            var rect = CGRect(x: 0, y: 0, width: src, height: src)
+            if aspect > 1 {
+                rect.size.height = CGFloat(src) / aspect
+                rect.origin.y = (CGFloat(src) - rect.height) / 2
+            } else if aspect < 1 {
+                rect.size.width = CGFloat(src) * aspect
+                rect.origin.x = (CGFloat(src) - rect.width) / 2
+            }
+            ctx.draw(cg, in: rect)
+            return true
         }
-        ctx.draw(cg, in: rect)
+        guard drawn else { return nil }
 
         var hi = [Double](repeating: 0, count: src * src)
         for i in 0..<(src * src) {
@@ -128,15 +132,18 @@ enum BitmapConverter {
                 pixels[i + 3] = ink ? 255 : 0
             }
         }
-        guard let ctx = CGContext(
-            data: &pixels,
-            width: size,
-            height: size,
-            bitsPerComponent: 8,
-            bytesPerRow: size * 4,
-            space: CGColorSpaceCreateDeviceRGB(),
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ), let cg = ctx.makeImage() else { return nil }
+        let cg = pixels.withUnsafeMutableBytes { buffer -> CGImage? in
+            CGContext(
+                data: buffer.baseAddress,
+                width: size,
+                height: size,
+                bitsPerComponent: 8,
+                bytesPerRow: size * 4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )?.makeImage()
+        }
+        guard let cg else { return nil }
         return UIImage(cgImage: cg, scale: 1, orientation: .up).withRenderingMode(.alwaysTemplate)
     }
 }
