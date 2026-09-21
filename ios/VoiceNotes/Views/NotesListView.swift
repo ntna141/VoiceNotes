@@ -11,6 +11,8 @@ struct MoodIconDestination: Hashable {
     let mood: Int
 }
 
+struct WallpaperDestination: Hashable {}
+
 struct DayCanvasDestination: Hashable {
     let dayKey: String
 }
@@ -118,6 +120,9 @@ struct NotesListView: View {
             }
             .navigationDestination(for: MoodIconDestination.self) { destination in
                 MoodIconEditorView(mood: destination.mood)
+            }
+            .navigationDestination(for: WallpaperDestination.self) { _ in
+                WallpaperEditorView()
             }
             .sheet(isPresented: $showingCamera) {
                 CameraSheet { images, dayKey in

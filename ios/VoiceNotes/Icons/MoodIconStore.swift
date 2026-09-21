@@ -43,21 +43,6 @@ final class MoodIconStore {
         return overrides[mood - 1] != nil
     }
 
-    var deviceSet: [[UInt8]] {
-        (1...MoodIcons.count).map { glyph(for: $0) ?? MoodIcons.defaults[$0 - 1] }
-    }
-
-    var hash: UInt32 {
-        var hash: UInt32 = 2_166_136_261
-        for icon in deviceSet {
-            for byte in icon {
-                hash ^= UInt32(byte)
-                hash = hash &* 16_777_619
-            }
-        }
-        return hash
-    }
-
     func setOverride(_ bitmap: [UInt8]?, for mood: Int) {
         guard (1...MoodIcons.count).contains(mood) else { return }
         overrides[mood - 1] = bitmap

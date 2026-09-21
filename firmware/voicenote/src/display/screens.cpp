@@ -7,7 +7,6 @@
 #include <string.h>
 
 #include "../../config.h"
-#include "../page/icons.h"
 #include "screen.h"
 
 namespace {
@@ -131,24 +130,4 @@ void screensDrawError(const char* message) {
   drawCentered(message, 122);
   setFont(&FreeSans9pt7b);
   drawCentered("top button to dismiss", 176);
-}
-
-void screensDrawMoodPick(uint8_t selected) {
-  screen.clear();
-  setFont(&FreeSansBold12pt7b);
-  drawCentered("Today", 40);
-  const int16_t gap = 8;
-  const int16_t total = PageMoodCount * PageIconSize + (PageMoodCount - 1) * gap;
-  const int16_t originX = (EPD_WIDTH - total) / 2;
-  const int16_t y = (EPD_HEIGHT - PageIconSize) / 2;
-  for (uint8_t mood = 1; mood <= PageMoodCount; ++mood) {
-    const int16_t x = originX + (mood - 1) * (PageIconSize + gap);
-    pageBlitIcon(x, y, iconFor(mood));
-    if (mood == selected) {
-      screen.drawRect(x - 4, y - 4, PageIconSize + 8, PageIconSize + 8, SCREEN_BLACK);
-      screen.drawRect(x - 3, y - 3, PageIconSize + 6, PageIconSize + 6, SCREEN_BLACK);
-    }
-  }
-  setFont(&FreeSans9pt7b);
-  drawCentered("rec: next  top: set", 176);
 }

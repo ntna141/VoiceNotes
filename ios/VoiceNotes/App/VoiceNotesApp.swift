@@ -11,6 +11,7 @@ struct VoiceNotesApp: App {
             NotesListView()
                 .environment(appDelegate.settings)
                 .environment(appDelegate.icons)
+                .environment(appDelegate.wallpaper)
                 .environment(appDelegate.link)
                 .environment(appDelegate.transcription)
         }
@@ -33,6 +34,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     let container: ModelContainer
     let settings: AppSettings
     let icons: MoodIconStore
+    let wallpaper: WallpaperStore
     let link: DeviceLink
     let transcription: TranscriptionService
 
@@ -43,7 +45,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         let context = container.mainContext
         settings = AppSettings()
         icons = MoodIconStore()
-        link = DeviceLink(context: context, icons: icons)
+        wallpaper = WallpaperStore()
+        link = DeviceLink(context: context, wallpaper: wallpaper)
         transcription = TranscriptionService(context: context, settings: settings)
         super.init()
         link.onRecordingFinished = { [transcription] note in

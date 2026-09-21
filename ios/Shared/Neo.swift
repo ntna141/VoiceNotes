@@ -116,7 +116,8 @@ struct FlowLayout: Layout {
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let width = proposal.width ?? .infinity
-        return place(subviews: subviews, in: width).size
+        let size = place(subviews: subviews, in: width).size
+        return CGSize(width: width.isFinite ? width : size.width, height: size.height)
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {

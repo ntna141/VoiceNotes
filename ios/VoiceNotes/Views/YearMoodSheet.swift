@@ -8,7 +8,6 @@ struct YearMoodSheet: View {
 
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
-    @Environment(DeviceLink.self) private var link
     @Query private var moods: [DayMood]
     @State private var year: Int
     @State private var selectedDayKey: String
@@ -155,7 +154,6 @@ struct YearMoodSheet: View {
                 .foregroundStyle(Neo.ink)
             MoodPickerRow(selected: moodByDay[selectedDayKey] ?? 0, size: 28) { mood in
                 context.setMood(mood, for: selectedDayKey)
-                link.moodChanged(mood, for: selectedDayKey)
             }
             .frame(maxWidth: .infinity)
             HStack(spacing: 10) {

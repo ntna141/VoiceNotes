@@ -4,7 +4,7 @@
 #include <driver/spi_master.h>
 
 #define DEVICE_NAME "VoiceNote"
-#define FW_VERSION "0.1.0"
+#define FW_VERSION "0.2.0"
 #define CPU_IDLE_MHZ 80
 #define CPU_BOOST_MHZ 240
 
@@ -57,8 +57,9 @@
 #define IDLE_AWAKE_MS 10000
 #define END_ACK_TIMEOUT_MS 5000
 #define DONE_SHOW_MS 5000
-#define MOOD_PICK_MS 20000
 #define ERROR_AWAKE_MS 60000
+
+#define LINK_MAX_MESSAGE_BYTES 8192
 
 #define HOME_MAX_LINES 8
 #define HOME_MAX_LINE_CHARS 32

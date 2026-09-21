@@ -7,35 +7,14 @@ import UIKit
 struct DeviceHello {
     var battery: Int
     var firmware: String
-    var year: Int
-    var month: Int
-    var day: Int
-    var moods: [Int] = []
-    var dirty: UInt32 = 0
-    var iconHash: UInt32?
+    var wallpaperHash: UInt32?
 
     init?(_ text: String) {
         let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
         guard lines.first == "hello", lines.count >= 3 else { return nil }
         battery = Int(lines[1]) ?? 0
         firmware = lines[2]
-        year = lines.count > 3 ? Int(lines[3]) ?? 0 : 0
-        month = lines.count > 4 ? Int(lines[4]) ?? 0 : 0
-        day = lines.count > 5 ? Int(lines[5]) ?? 0 : 0
-        let raw = lines.count > 6 ? lines[6] : ""
-        if raw.count == PageEncoder.maxDays, raw.allSatisfy(\.isNumber) {
-            moods = raw.map { Int(String($0)) ?? 0 }
-        }
-        dirty = lines.count > 7 ? UInt32(lines[7]) ?? 0 : 0
-        iconHash = lines.count > 8 ? UInt32(lines[8]) : nil
-    }
-
-    var hasPage: Bool {
-        year > 0 && month > 0 && day > 0 && moods.count == PageEncoder.maxDays
-    }
-
-    var dirtyDays: [Int] {
-        (1...PageEncoder.maxDays).filter { dirty & (1 << ($0 - 1)) != 0 }
+        wallpaperHash = lines.count > 3 ? UInt32(lines[3]) : nil
     }
 }
 
@@ -49,32 +28,30 @@ final class DeviceLink {
     private(set) var lastHelloAt: Date?
     private(set) var isRecording = false
     private(set) var pendingReset = false
-    private(set) var deviceIconHash: UInt32?
+    private(set) var deviceWallpaperHash: UInt32?
     var lastError: String?
 
     var onRecordingFinished: ((Note) -> Void)?
 
-    var iconsInSync: Bool {
-        deviceIconHash == icons.hash
+    var wallpaperInSync: Bool {
+        deviceWallpaperHash == wallpaper.hash
     }
 
     private enum Outbound: Equatable {
         case time
-        case page
-        case icons
-        case mood(day: Int)
+        case wallpaper
     }
 
     private let ble = EasyBLE()
     private let context: ModelContext
-    private let icons: MoodIconStore
+    private let wallpaper: WallpaperStore
     private var outgoing: [(kind: Outbound, data: Data)] = []
     private var recordingTask: Task<Void, Never>?
     private var activeChannel: EasyBLEIncomingChannel?
 
-    init(context: ModelContext, icons: MoodIconStore) {
+    init(context: ModelContext, wallpaper: WallpaperStore) {
         self.context = context
-        self.icons = icons
+        self.wallpaper = wallpaper
         ble.onConnect { [weak self] in self?.connected() }
         ble.onDisconnect { [weak self] in self?.disconnected() }
         ble.onReceive { [weak self] message in self?.received(message) }
@@ -99,24 +76,16 @@ final class DeviceLink {
         }
     }
 
-    func moodChanged(_ mood: Int, for dayKey: String) {
-        guard isConnected else { return }
-        let parts = dayKey.split(separator: "-").compactMap { Int($0) }
-        let now = Calendar.current.dateComponents([.year, .month], from: Date())
-        guard parts.count == 3, parts[0] == now.year, parts[1] == now.month else { return }
-        enqueue(.mood(day: parts[2]), PageEncoder.mood(year: parts[0], month: parts[1], day: parts[2], mood: mood))
-    }
-
-    func iconsChanged() {
+    func wallpaperChanged() {
         if isConnected {
-            pushIcons()
+            pushWallpaper()
         }
     }
 
     func resetDevice() {
         if isConnected {
             pendingReset = false
-            pushAll(force: true)
+            pushAll()
         } else {
             pendingReset = true
         }
@@ -124,7 +93,7 @@ final class DeviceLink {
 
     private func connected() {
         isConnected = true
-        enqueue(.time, PageEncoder.time())
+        enqueue(.time, DeviceEncoder.time())
     }
 
     private func disconnected() {
@@ -142,54 +111,24 @@ final class DeviceLink {
         battery = hello.battery
         firmware = hello.firmware
         lastHelloAt = Date()
-        deviceIconHash = hello.iconHash
+        deviceWallpaperHash = hello.wallpaperHash
         if pendingReset {
             pendingReset = false
-            pushAll(force: true)
+            pushAll()
             return
         }
-        reconcile(hello)
-        if !iconsInSync {
-            pushIcons()
+        if !wallpaperInSync {
+            pushWallpaper()
         }
     }
 
-    private func reconcile(_ hello: DeviceHello) {
-        let now = Date()
-        let calendar = Calendar.current
-        let year = calendar.component(.year, from: now)
-        let month = calendar.component(.month, from: now)
-        let today = calendar.component(.day, from: now)
-        if hello.hasPage {
-            for day in hello.dirtyDays {
-                context.setMood(hello.moods[day - 1], for: DayKey.make(year: hello.year, month: hello.month, day: day))
-            }
-            if hello.dirty == 0, hello.year == year, hello.month == month, hello.day == today,
-               hello.moods == context.moods(year: year, month: month) {
-                return
-            }
-        }
-        pushPage()
+    private func pushAll() {
+        enqueue(.time, DeviceEncoder.time())
+        pushWallpaper()
     }
 
-    private func pushAll(force: Bool) {
-        enqueue(.time, PageEncoder.time())
-        pushIcons()
-        pushPage(force: force)
-    }
-
-    private func pushPage(force: Bool = false) {
-        let now = Date()
-        let calendar = Calendar.current
-        let year = calendar.component(.year, from: now)
-        let month = calendar.component(.month, from: now)
-        let today = calendar.component(.day, from: now)
-        let moods = context.moods(year: year, month: month)
-        enqueue(.page, PageEncoder.page(year: year, month: month, today: today, moods: moods, force: force, now: now, calendar: calendar))
-    }
-
-    private func pushIcons() {
-        enqueue(.icons, icons.hasOverrides ? PageEncoder.icons(icons.deviceSet) : PageEncoder.iconsReset())
+    private func pushWallpaper() {
+        enqueue(.wallpaper, wallpaper.bitmap.map(DeviceEncoder.wallpaper) ?? DeviceEncoder.wallpaperReset())
     }
 
     private func enqueue(_ kind: Outbound, _ data: Data) {
@@ -210,8 +149,8 @@ final class DeviceLink {
     private func sendFinished(_ ok: Bool) {
         if !outgoing.isEmpty {
             let sent = outgoing.removeFirst()
-            if sent.kind == .icons, ok {
-                deviceIconHash = icons.hash
+            if sent.kind == .wallpaper, ok {
+                deviceWallpaperHash = wallpaper.hash
             }
         }
         if !ok {

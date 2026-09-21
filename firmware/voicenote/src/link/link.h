@@ -4,8 +4,6 @@
 #include <stdint.h>
 
 #include "../home/home.h"
-#include "../page/icons.h"
-#include "../page/page.h"
 
 bool linkBegin();
 void linkEnd();
@@ -16,12 +14,10 @@ bool linkJustDisconnected();
 bool linkTakeActivity();
 void linkLowPower(bool enabled);
 
-bool linkSendHello(int batteryPercent, const Page& page);
+bool linkSendHello(int batteryPercent);
 bool linkTakeHome(HomeData& data);
-bool linkTakePage(Page& page, uint32_t& unixUtc, int16_t& tzMinutes, bool& force);
-bool linkTakeMood(uint16_t& year, uint8_t& month, uint8_t& day, uint8_t& mood);
 bool linkTakeTime(uint32_t& unixUtc, int16_t& tzMinutes);
-bool linkTakeIcons(IconSet& set, bool& reset);
+bool linkTakeWallpaper(const uint8_t*& bits, bool& reset);
 
 bool linkStreamOpen();
 bool linkStreamOpened();

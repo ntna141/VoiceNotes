@@ -11,4 +11,3 @@ void screensDrawRecording(uint32_t elapsedMs, bool quick);
 void screensDrawStatus(const char* title, const char* subtitle);
 void screensDrawDone();
 void screensDrawError(const char* message);
-void screensDrawMoodPick(uint8_t selected);

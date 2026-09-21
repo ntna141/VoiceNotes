@@ -7,6 +7,7 @@
 
 #include "../../config.h"
 #include "../clock/clock.h"
+#include "../wallpaper/wallpaper.h"
 
 namespace {
 
@@ -26,22 +27,12 @@ bool justDisconnected = false;
 bool activity = false;
 bool homePending = false;
 HomeData pendingHome;
-bool pagePending = false;
-Page pendingPage;
-uint32_t pendingPageUtc = 0;
-int16_t pendingPageTz = 0;
-bool pendingPageForce = false;
-bool moodPending = false;
-uint16_t pendingMoodYear = 0;
-uint8_t pendingMoodMonth = 0;
-uint8_t pendingMoodDay = 0;
-uint8_t pendingMoodValue = 0;
 bool timePending = false;
 uint32_t pendingTimeUtc = 0;
 int16_t pendingTimeTz = 0;
-bool iconsPending = false;
-bool iconsResetPending = false;
-IconSet pendingIcons;
+bool wallpaperPending = false;
+bool wallpaperResetPending = false;
+uint8_t pendingWallpaper[WallpaperBytes];
 bool closedPending = false;
 bool closedAcked = false;
 
@@ -62,32 +53,22 @@ void onStreamClosed(bool acked) {
 void onReceive(const EasyBLEMessage& message) {
   activity = true;
   if (message.type == EasyBLEMessageType::Image) {
-    Page parsed;
     uint32_t utc = 0;
     int16_t tz = 0;
-    bool force = false;
-    if (pageParse(message.data, message.length, parsed, utc, tz, force)) {
-      pendingPage = parsed;
-      pendingPageUtc = utc;
-      pendingPageTz = tz;
-      pendingPageForce = force;
-      pagePending = true;
-      return;
-    }
-    if (moodParse(message.data, message.length, pendingMoodYear, pendingMoodMonth, pendingMoodDay, pendingMoodValue)) {
-      moodPending = true;
-      return;
-    }
     if (timeParse(message.data, message.length, utc, tz)) {
       pendingTimeUtc = utc;
       pendingTimeTz = tz;
       timePending = true;
       return;
     }
+    const uint8_t* bits = nullptr;
     bool reset = false;
-    if (iconsParse(message.data, message.length, pendingIcons, reset)) {
-      iconsResetPending = reset;
-      iconsPending = true;
+    if (wallpaperParse(message.data, message.length, bits, reset)) {
+      if (!reset) {
+        memcpy(pendingWallpaper, bits, WallpaperBytes);
+      }
+      wallpaperResetPending = reset;
+      wallpaperPending = true;
     }
     return;
   }
@@ -116,7 +97,7 @@ bool linkBegin() {
   EasyBLE.onReceive(onReceive);
   EasyBLE.channel().onRequested(onStreamRequested);
   EasyBLE.channel().onClosed(onStreamClosed);
-  return EasyBLE.begin(DEVICE_NAME);
+  return EasyBLE.begin(DEVICE_NAME, LINK_MAX_MESSAGE_BYTES);
 }
 
 void linkEnd() {
@@ -159,35 +140,16 @@ void linkLowPower(bool enabled) {
   EasyBLE.setLowPower(enabled);
 }
 
-bool linkSendHello(int batteryPercent, const Page& page) {
-  char text[128];
-  const bool valid = pageValid(page);
-  int n = snprintf(text, sizeof(text), "hello\n%d\n%s\n%u\n%u\n%u\n", batteryPercent, FW_VERSION,
-                   valid ? page.year : 0, valid ? page.month : 0, valid ? page.today : 0);
-  if (n < 0 || n + PageMaxDays + 24 > static_cast<int>(sizeof(text))) {
+bool linkSendHello(int batteryPercent) {
+  char text[64];
+  const int n = snprintf(text, sizeof(text), "hello\n%d\n%s\n%lu\n", batteryPercent, FW_VERSION,
+                         static_cast<unsigned long>(wallpaperHash()));
+  if (n < 0 || n >= static_cast<int>(sizeof(text))) {
     return false;
   }
-  if (valid) {
-    for (int i = 0; i < PageMaxDays; ++i) {
-      const uint8_t mood = page.moods[i] > PageMoodCount ? 0 : page.moods[i];
-      text[n++] = static_cast<char>('0' + mood);
-    }
-  }
-  n += snprintf(text + n, sizeof(text) - n, "\n%lu\n%lu\n", static_cast<unsigned long>(valid ? page.dirty : 0),
-                static_cast<unsigned long>(iconsHash()));
   const bool sent = EasyBLE.sendText(text);
   activity |= sent;
   return sent;
-}
-
-bool linkTakeIcons(IconSet& set, bool& reset) {
-  if (!iconsPending) {
-    return false;
-  }
-  iconsPending = false;
-  set = pendingIcons;
-  reset = iconsResetPending;
-  return true;
 }
 
 bool linkTakeHome(HomeData& data) {
@@ -199,30 +161,6 @@ bool linkTakeHome(HomeData& data) {
   return true;
 }
 
-bool linkTakePage(Page& page, uint32_t& unixUtc, int16_t& tzMinutes, bool& force) {
-  if (!pagePending) {
-    return false;
-  }
-  pagePending = false;
-  page = pendingPage;
-  unixUtc = pendingPageUtc;
-  tzMinutes = pendingPageTz;
-  force = pendingPageForce;
-  return true;
-}
-
-bool linkTakeMood(uint16_t& year, uint8_t& month, uint8_t& day, uint8_t& mood) {
-  if (!moodPending) {
-    return false;
-  }
-  moodPending = false;
-  year = pendingMoodYear;
-  month = pendingMoodMonth;
-  day = pendingMoodDay;
-  mood = pendingMoodValue;
-  return true;
-}
-
 bool linkTakeTime(uint32_t& unixUtc, int16_t& tzMinutes) {
   if (!timePending) {
     return false;
@@ -230,6 +168,16 @@ bool linkTakeTime(uint32_t& unixUtc, int16_t& tzMinutes) {
   timePending = false;
   unixUtc = pendingTimeUtc;
   tzMinutes = pendingTimeTz;
+  return true;
+}
+
+bool linkTakeWallpaper(const uint8_t*& bits, bool& reset) {
+  if (!wallpaperPending) {
+    return false;
+  }
+  wallpaperPending = false;
+  reset = wallpaperResetPending;
+  bits = reset ? nullptr : pendingWallpaper;
   return true;
 }
 

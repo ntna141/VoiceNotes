@@ -10,9 +10,8 @@
 #include "src/home/home.h"
 #include "src/input/button.h"
 #include "src/link/link.h"
-#include "src/page/icons.h"
-#include "src/page/page.h"
 #include "src/power/power.h"
+#include "src/wallpaper/wallpaper.h"
 
 namespace {
 
@@ -23,7 +22,6 @@ enum class State : uint8_t {
   Ending,
   Done,
   Error,
-  MoodPick,
 };
 
 enum class RecordMode : uint8_t {
@@ -35,19 +33,17 @@ enum class RecordMode : uint8_t {
 Button recButton(BTN_REC_PIN);
 Button topButton(BTN_TOP_PIN);
 HomeData home;
-Page page;
 State state = State::Home;
 RecordMode recordMode = RecordMode::None;
 bool displayReady = false;
 uint32_t stateEnteredAt = 0;
 uint32_t lastActivityAt = 0;
 uint32_t lastScreenTickAt = 0;
-uint32_t lastClockCheckAt = 0;
 uint32_t lastBatteryCheckAt = 0;
 int battery = 0;
-uint8_t moodSelection = 3;
 bool helloNeeded = false;
 uint32_t redrawAt = 0;
+bool redrawFull = false;
 char errorMessage[24];
 
 void ensureDisplay() {
@@ -73,7 +69,7 @@ void goToSleep() {
   restDisplay();
   linkEnd();
   Serial.flush();
-  powerDeepSleep(timeSecondsUntilLocalMidnight());
+  powerDeepSleep(0);
 }
 
 void showHome(bool full = false) {
@@ -81,13 +77,14 @@ void showHome(bool full = false) {
   lastActivityAt = millis();
   lastBatteryCheckAt = millis();
   battery = batteryPercent();
-  if (!pageValid(page)) {
-    pageFromClock(page);
-  }
-  if (pageValid(page)) {
-    pageDraw(page, battery);
+  if (wallpaperPresent()) {
+    wallpaperDraw();
   } else {
-    screen.clear();
+    screensDrawStatus("VoiceNote", "set a wallpaper in the app");
+  }
+  if (battery < BATTERY_LOW_PERCENT) {
+    screen.fillRect(EPD_WIDTH - 8 - 24, EPD_HEIGHT - 8 - 13, 30, 15, SCREEN_WHITE);
+    screensDrawLowBattery(EPD_WIDTH - 6 - 22, EPD_HEIGHT - 6 - 11);
   }
   if (full) {
     screen.showFull();
@@ -123,10 +120,6 @@ void enter(State next) {
       screensDrawError(errorMessage);
       screen.showPartial();
       break;
-    case State::MoodPick:
-      screensDrawMoodPick(moodSelection);
-      screen.showPartial();
-      break;
   }
 }
 
@@ -139,12 +132,13 @@ void sendHello() {
     helloNeeded = true;
     return;
   }
-  helloNeeded = !linkSendHello(battery, page);
+  helloNeeded = !linkSendHello(battery);
 }
 
-void scheduleRedraw() {
-  if (state == State::Home || state == State::MoodPick) {
+void scheduleRedraw(bool full = false) {
+  if (state == State::Home) {
     redrawAt = millis() + 200;
+    redrawFull |= full;
   }
 }
 
@@ -154,21 +148,9 @@ void maybeRedraw() {
   }
   redrawAt = 0;
   if (state == State::Home) {
-    showHome();
-  } else if (state == State::MoodPick) {
-    screensDrawMoodPick(moodSelection);
-    screen.showPartial();
+    showHome(redrawFull);
   }
-}
-
-bool beginMoodPick() {
-  if (!pageValid(page)) {
-    return false;
-  }
-  const uint8_t current = pageTodayMood(page);
-  moodSelection = current == 0 ? 3 : current;
-  enter(State::MoodPick);
-  return true;
+  redrawFull = false;
 }
 
 void fail(const char* message) {
@@ -176,34 +158,6 @@ void fail(const char* message) {
   errorMessage[sizeof(errorMessage) - 1] = '\0';
   Serial.printf("error: %s\n", message);
   enter(State::Error);
-}
-
-void handleClock() {
-  if (millis() - lastClockCheckAt < 1000) {
-    return;
-  }
-  lastClockCheckAt = millis();
-  uint16_t year = 0;
-  uint8_t month = 0;
-  uint8_t day = 0;
-  uint8_t weekday = 0;
-  if (!pageValid(page) || !timeLocalDate(year, month, day, weekday)) {
-    return;
-  }
-  if (page.year == year && page.month == month && page.today == day) {
-    return;
-  }
-  Page next = page;
-  if (!pageAdvanceDay(next) || next.year != year || next.month != month || next.today != day) {
-    pageFromClock(next);
-  }
-  page = next;
-  pageSave(page);
-  Serial.printf("day %u-%u-%u\n", page.year, page.month, page.today);
-  if (state == State::Home) {
-    showHome(true);
-  }
-  sendHello();
 }
 
 void handleBattery() {
@@ -261,52 +215,25 @@ void handleLink() {
     sendHello();
   }
 
-  Page incomingPage;
   uint32_t utc = 0;
   int16_t tz = 0;
-  bool force = false;
-  if (linkTakePage(incomingPage, utc, tz, force)) {
-    pageMerge(page, incomingPage, force);
-    pageSave(page);
-    timeApply(utc, tz);
-    Serial.printf("page %u-%u-%u mood=%u dirty=%lu\n", page.year, page.month, page.today, pageTodayMood(page),
-                  static_cast<unsigned long>(page.dirty));
-    scheduleRedraw();
-    if (page.dirty != 0) {
-      sendHello();
-    }
-  }
-
-  uint16_t moodYear = 0;
-  uint8_t moodMonth = 0;
-  uint8_t moodDay = 0;
-  uint8_t moodValue = 0;
-  if (linkTakeMood(moodYear, moodMonth, moodDay, moodValue) && pageSetMood(page, moodYear, moodMonth, moodDay, moodValue)) {
-    pageSave(page);
-    Serial.printf("mood %u-%u-%u=%u\n", moodYear, moodMonth, moodDay, moodValue);
-    scheduleRedraw();
-  }
-
   if (linkTakeTime(utc, tz)) {
     timeApply(utc, tz);
     Serial.printf("time %lu tz=%d\n", static_cast<unsigned long>(utc), tz);
-    if (!pageValid(page) && pageFromClock(page)) {
-      pageSave(page);
-      scheduleRedraw();
-    }
     sendHello();
   }
 
-  IconSet incomingIcons;
-  bool resetIcons = false;
-  if (linkTakeIcons(incomingIcons, resetIcons)) {
-    if (resetIcons) {
-      iconsReset();
+  const uint8_t* bits = nullptr;
+  bool resetWallpaper = false;
+  if (linkTakeWallpaper(bits, resetWallpaper)) {
+    if (resetWallpaper) {
+      wallpaperReset();
     } else {
-      iconsSave(incomingIcons);
+      wallpaperSave(bits);
     }
-    Serial.printf("icons %s\n", resetIcons ? "reset" : "saved");
-    scheduleRedraw();
+    Serial.printf("wallpaper %s\n", resetWallpaper ? "reset" : "saved");
+    scheduleRedraw(true);
+    sendHello();
   }
 
   HomeData incoming;
@@ -349,41 +276,12 @@ void loopHome(ButtonEvent rec, ButtonEvent top) {
     beginConnecting(RecordMode::Quick);
     return;
   }
-  if (top == ButtonEvent::Hold && beginMoodPick()) {
-    return;
-  }
   if (top == ButtonEvent::Single) {
     showHome();
     sendHello();
   }
   if (millis() - lastActivityAt >= IDLE_AWAKE_MS && !linkStreamEnabled()) {
     goToSleep();
-  }
-}
-
-void loopMoodPick(ButtonEvent rec, ButtonEvent top) {
-  if (top == ButtonEvent::Hold || millis() - stateEnteredAt >= MOOD_PICK_MS) {
-    enter(State::Home);
-    return;
-  }
-  if (top == ButtonEvent::Single) {
-    pageSetTodayMood(page, moodSelection);
-    pageSave(page);
-    Serial.printf("mood set %u\n", moodSelection);
-    sendHello();
-    enter(State::Home);
-    return;
-  }
-  uint8_t next = moodSelection;
-  if (rec == ButtonEvent::Single) {
-    next = moodSelection == PageMoodCount ? 1 : moodSelection + 1;
-  } else if (rec == ButtonEvent::Double) {
-    next = moodSelection == 1 ? PageMoodCount : moodSelection - 1;
-  }
-  if (next != moodSelection) {
-    moodSelection = next;
-    screensDrawMoodPick(moodSelection);
-    screen.showPartial();
   }
 }
 
@@ -475,9 +373,6 @@ void loopDone() {
 }
 
 void loopError(ButtonEvent rec, ButtonEvent top) {
-  if (top == ButtonEvent::Hold && beginMoodPick()) {
-    return;
-  }
   if (top == ButtonEvent::Single || top == ButtonEvent::Double) {
     enter(State::Home);
     return;
@@ -502,8 +397,7 @@ void setup() {
   powerBegin();
   Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN, 400000);
   homeLoad(home);
-  pageLoad(page);
-  iconsLoad();
+  wallpaperLoad();
   const WakeCause wake = powerWakeCause();
   recButton.reset(wake == WakeCause::Button);
   topButton.reset(wake == WakeCause::Button);
@@ -534,7 +428,6 @@ void loop() {
   powerSetBoost(busy);
   linkLowPower(!busy);
   handleLink();
-  handleClock();
   handleBattery();
   handleMonitor();
   drainMic();
@@ -557,9 +450,6 @@ void loop() {
       break;
     case State::Error:
       loopError(rec, top);
-      break;
-    case State::MoodPick:
-      loopMoodPick(rec, top);
       break;
   }
   maybeRedraw();

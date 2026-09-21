@@ -18,10 +18,13 @@ enum BitmapConverter {
         }
     }
 
-    static func bitmap(from image: UIImage, mode: Mode) -> [UInt8]? {
+    static func bytes(forSize size: Int) -> Int {
+        (size + 7) / 8 * size
+    }
+
+    static func bitmap(from image: UIImage, size: Int = MoodIcons.size, crop: CGRect? = nil, mode: Mode) -> [UInt8]? {
         guard let cg = image.cgImage else { return nil }
-        let size = MoodIcons.size
-        let scale = 4
+        let scale = min(4, max(1, 512 / size))
         let src = size * scale
         var pixels = [UInt8](repeating: 255, count: src * src * 4)
         let drawn = pixels.withUnsafeMutableBytes { buffer -> Bool in
@@ -37,14 +40,20 @@ enum BitmapConverter {
             ctx.setFillColor(red: 1, green: 1, blue: 1, alpha: 1)
             ctx.fill(CGRect(x: 0, y: 0, width: src, height: src))
             ctx.interpolationQuality = .high
-            let aspect = CGFloat(cg.width) / CGFloat(cg.height)
             var rect = CGRect(x: 0, y: 0, width: src, height: src)
-            if aspect > 1 {
-                rect.size.height = CGFloat(src) / aspect
-                rect.origin.y = (CGFloat(src) - rect.height) / 2
-            } else if aspect < 1 {
-                rect.size.width = CGFloat(src) * aspect
-                rect.origin.x = (CGFloat(src) - rect.width) / 2
+            if let crop {
+                let s = CGFloat(src) / crop.width
+                rect = CGRect(x: -crop.minX * s, y: -crop.minY * s, width: CGFloat(cg.width) * s, height: CGFloat(cg.height) * s)
+                rect.origin.y = CGFloat(src) - rect.maxY
+            } else {
+                let aspect = CGFloat(cg.width) / CGFloat(cg.height)
+                if aspect > 1 {
+                    rect.size.height = CGFloat(src) / aspect
+                    rect.origin.y = (CGFloat(src) - rect.height) / 2
+                } else if aspect < 1 {
+                    rect.size.width = CGFloat(src) * aspect
+                    rect.origin.x = (CGFloat(src) - rect.width) / 2
+                }
             }
             ctx.draw(cg, in: rect)
             return true
@@ -75,7 +84,7 @@ enum BitmapConverter {
         let edges = mode == .outline ? edgeStrength(hi, src: src, scale: scale, size: size) : nil
         let edgeCut = max(40, (edges?.max() ?? 0) * 0.25)
 
-        var packed = [UInt8](repeating: 0, count: MoodIcons.bytesPerIcon)
+        var packed = [UInt8](repeating: 0, count: bytes(forSize: size))
         let stride = (size + 7) / 8
         for row in 0..<size {
             for col in 0..<size {
@@ -118,9 +127,9 @@ enum BitmapConverter {
         return cells
     }
 
-    static func image(from bitmap: [UInt8]) -> UIImage? {
-        let size = MoodIcons.size
+    static func image(from bitmap: [UInt8], size: Int = MoodIcons.size) -> UIImage? {
         let stride = (size + 7) / 8
+        guard bitmap.count == stride * size else { return nil }
         var pixels = [UInt8](repeating: 0, count: size * size * 4)
         for row in 0..<size {
             for col in 0..<size {

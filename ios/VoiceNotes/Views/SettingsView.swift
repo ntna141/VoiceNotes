@@ -5,6 +5,7 @@ struct SettingsView: View {
     @Environment(AppSettings.self) private var settings
     @Environment(DeviceLink.self) private var link
     @Environment(MoodIconStore.self) private var icons
+    @Environment(WallpaperStore.self) private var wallpaper
     @State private var newTerm = ""
     @State private var newHint = ""
 
@@ -89,12 +90,51 @@ struct SettingsView: View {
                                 }
                             }
                             .buttonStyle(NeoButtonStyle(fill: Neo.yellow))
-                            footer("Overwrites the device with the phone's clock, this month's moods, and the current icons. Normally everything syncs on its own whenever the device connects.")
+                            footer("Overwrites the device with the phone's clock and the current wallpaper. Normally everything syncs on its own whenever the device connects.")
                             if let error = link.lastError {
                                 Text(error)
                                     .font(.footnote.weight(.bold))
                                     .foregroundStyle(Neo.red)
                             }
+                        }
+                    }
+
+                    section("Wallpaper") {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack(spacing: 12) {
+                                Group {
+                                    if let image = wallpaper.image {
+                                        Image(uiImage: image)
+                                            .interpolation(.none)
+                                            .resizable()
+                                            .foregroundStyle(Neo.ink)
+                                    } else {
+                                        Image(systemName: "photo")
+                                            .font(.title.weight(.bold))
+                                            .foregroundStyle(Neo.muted)
+                                    }
+                                }
+                                .frame(width: 100, height: 100)
+                                .padding(4)
+                                .neoChip()
+                                VStack(alignment: .leading, spacing: 10) {
+                                    NavigationLink(value: WallpaperDestination()) {
+                                        Text(wallpaper.bitmap == nil ? "Choose photo" : "Change")
+                                    }
+                                    .buttonStyle(NeoButtonStyle(fill: Neo.red, shadow: 2))
+                                    if wallpaper.bitmap != nil {
+                                        Button("Remove") {
+                                            wallpaper.set(nil)
+                                            link.wallpaperChanged()
+                                        }
+                                        .buttonStyle(NeoButtonStyle(fill: Neo.card, shadow: 2))
+                                    }
+                                }
+                                Spacer()
+                            }
+                            footer(wallpaper.bitmap == nil
+                                ? "The device shows a \(WallpaperStore.size) by \(WallpaperStore.size) image on its home screen. Pick a photo to convert it."
+                                : (link.wallpaperInSync ? "Device has the current wallpaper." : "Wallpaper will be sent to the device on next connection."))
                         }
                     }
 
@@ -106,11 +146,9 @@ struct SettingsView: View {
                             if icons.hasOverrides {
                                 Button("Reset all to defaults") {
                                     icons.resetAll()
-                                    link.iconsChanged()
                                 }
                                 .buttonStyle(NeoButtonStyle(fill: Neo.red))
                             }
-                            footer(link.iconsInSync ? "Device has the current icon set." : "Icons will be sent to the device on next connection.")
                         }
                     }
                 }
@@ -307,7 +345,6 @@ struct SettingsView: View {
             if icons.isCustom(mood) {
                 Button {
                     icons.setOverride(nil, for: mood)
-                    link.iconsChanged()
                 } label: {
                     Image(systemName: "arrow.uturn.backward")
                 }
