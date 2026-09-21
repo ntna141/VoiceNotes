@@ -59,17 +59,11 @@ final class TranscriptionService {
     }
 
     func retry(_ note: Note) {
+        cleanupRemote(note)
+        note.sonioxFileId = nil
+        note.sonioxTranscriptionId = nil
         note.errorMessage = nil
-        if note.sonioxTranscriptionId != nil {
-            note.transcription = .transcribing
-            startPolling(note)
-        } else if note.sonioxFileId != nil {
-            note.transcription = .uploading
-            startCreate(note)
-        } else {
-            startUpload(note)
-        }
-        try? context.save()
+        startUpload(note)
     }
 
     func resumePending() {
@@ -274,9 +268,12 @@ final class TranscriptionService {
                         break
                     }
                 } catch {
-                    if case SonioxError.http(let code, _) = error, code == 401 || code == 404 {
+                    switch error {
+                    case SonioxError.missingAPIKey, SonioxError.http(401, _), SonioxError.http(404, _):
                         self.fail(note, error.localizedDescription)
                         return
+                    default:
+                        break
                     }
                 }
                 try? await Task.sleep(for: .seconds(delay))
@@ -292,9 +289,14 @@ final class TranscriptionService {
         note.transcription = .done
         note.errorMessage = nil
         try? context.save()
+        cleanupRemote(note)
+    }
+
+    private func cleanupRemote(_ note: Note) {
         let client = self.client
         let transcriptionId = note.sonioxTranscriptionId
         let fileId = note.sonioxFileId
+        guard transcriptionId != nil || fileId != nil else { return }
         Task {
             if let transcriptionId {
                 await client.delete(transcriptionId: transcriptionId)
