@@ -8,6 +8,7 @@ struct DeviceHello {
     var battery: Int
     var firmware: String
     var wallpaperHash: UInt32?
+    var protocolVersion: Int?
 
     init?(_ text: String) {
         let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
@@ -15,12 +16,14 @@ struct DeviceHello {
         battery = Int(lines[1]) ?? 0
         firmware = lines[2]
         wallpaperHash = lines.count > 3 ? UInt32(lines[3]) : nil
+        protocolVersion = lines.count > 4 ? Int(lines[4]) : nil
     }
 }
 
 @Observable
 final class DeviceLink {
     static let deviceName = "VoiceNote"
+    static let protocolVersion = 2
 
     private(set) var isConnected = false
     private(set) var battery: Int?
@@ -112,12 +115,17 @@ final class DeviceLink {
         firmware = hello.firmware
         lastHelloAt = Date()
         deviceWallpaperHash = hello.wallpaperHash
+        if let version = hello.protocolVersion, version != Self.protocolVersion {
+            lastError = "Device firmware \(hello.firmware) is not compatible with this app version"
+            outgoing.removeAll()
+            return
+        }
         if pendingReset {
             pendingReset = false
             pushAll()
             return
         }
-        if !wallpaperInSync {
+        if !wallpaperInSync && !outgoing.contains(where: { $0.kind == .wallpaper }) {
             pushWallpaper()
         }
     }

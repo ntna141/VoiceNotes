@@ -9,16 +9,13 @@ namespace {
 
 constexpr int FrameBytes = EPD_WIDTH * EPD_HEIGHT / 8;
 
-RTC_DATA_ATTR uint8_t savedFrame[FrameBytes];
-RTC_DATA_ATTR bool savedFrameValid = false;
-
 }  // namespace
 
 Screen screen;
 
 Screen::Screen() : Adafruit_GFX(EPD_WIDTH, EPD_HEIGHT) {}
 
-void Screen::begin(bool restorePrevious) {
+void Screen::begin() {
   if (_epd == nullptr) {
     custom_lcd_spi_t cfg = {};
     cfg.cs = EPD_CS_PIN;
@@ -32,14 +29,11 @@ void Screen::begin(bool restorePrevious) {
     _epd = new epaper_driver_display(EPD_WIDTH, EPD_HEIGHT, cfg);
   }
   _epd->EPD_Init();
-  if (restorePrevious && savedFrameValid) {
-    memcpy(_epd->getBuffer(), savedFrame, FrameBytes);
-    _epd->EPD_LoadBaseImage();
-  } else {
-    _epd->EPD_Clear();
-    _epd->EPD_DisplayPartBaseImage();
-    save();
-  }
+  _epd->EPD_Clear();
+}
+
+void Screen::loadBase() {
+  _epd->EPD_LoadBaseImage();
   _epd->EPD_Init_Partial();
 }
 
@@ -73,21 +67,14 @@ void Screen::clear() {
 
 void Screen::showPartial() {
   _epd->EPD_DisplayPart();
-  save();
 }
 
 void Screen::showFull() {
   _epd->EPD_Init();
   _epd->EPD_DisplayPartBaseImage();
   _epd->EPD_Init_Partial();
-  save();
 }
 
 void Screen::sleep() {
   _epd->EPD_Sleep();
-}
-
-void Screen::save() {
-  memcpy(savedFrame, _epd->getBuffer(), FrameBytes);
-  savedFrameValid = true;
 }

@@ -1,0 +1,15 @@
+{
+  "originHash" : "eb1bc5af9a21524e748af5126bfbd92a405231b87bd6e8dc57fadf95fa13cc0a",
+  "pins" : [
+    {
+      "identity" : "easyble",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ntna141/EasyBLE.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "b422c8a3bafc0c00cc5060401e2559ba76fe9b24"
+      }
+    }
+  ],
+  "version" : 3
+}

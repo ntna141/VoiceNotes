@@ -38,7 +38,6 @@
 /* Begin PBXFileReference section */
 		07E893385CD0674B446CD913 /* VoiceNotes.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VoiceNotes.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		92962C8BF677A76DFECF5166 /* VoiceNotesShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = VoiceNotesShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		DA98E8C8F30ACB2646237B1D /* EasyBLE */ = {isa = PBXFileReference; lastKnownFileType = folder; name = EasyBLE; path = ../../EasyBLE; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -107,7 +106,6 @@
 		E304D5F27FB8566CE5D2DB94 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				DA98E8C8F30ACB2646237B1D /* EasyBLE */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -189,7 +187,7 @@
 			mainGroup = BB2A8C670747A378888247FD;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				C79491A1E21CAFF2EC5543C6 /* XCLocalSwiftPackageReference "../../EasyBLE" */,
+				C79491A1E21CAFF2EC5543C6 /* XCRemoteSwiftPackageReference "EasyBLE" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 382D0E5896844F2A4D8E8280 /* Products */;
@@ -477,16 +475,21 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		C79491A1E21CAFF2EC5543C6 /* XCLocalSwiftPackageReference "../../EasyBLE" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../EasyBLE;
+/* Begin XCRemoteSwiftPackageReference section */
+		C79491A1E21CAFF2EC5543C6 /* XCRemoteSwiftPackageReference "EasyBLE" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ntna141/EasyBLE.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
 		};
-/* End XCLocalSwiftPackageReference section */
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		E406BDE345134F246D0016EB /* EasyBLE */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = C79491A1E21CAFF2EC5543C6 /* XCRemoteSwiftPackageReference "EasyBLE" */;
 			productName = EasyBLE;
 		};
 /* End XCSwiftPackageProductDependency section */

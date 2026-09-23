@@ -85,6 +85,11 @@ void onReceive(const EasyBLEMessage& message) {
   }
 }
 
+bool onStream(const EasyBLEStreamEvent&) {
+  activity = true;
+  return false;
+}
+
 void onStreamRequested() {
   linkStreamOpen();
 }
@@ -95,6 +100,7 @@ bool linkBegin() {
   EasyBLE.onConnect(onConnect);
   EasyBLE.onDisconnect(onDisconnect);
   EasyBLE.onReceive(onReceive);
+  EasyBLE.onStream(onStream);
   EasyBLE.channel().onRequested(onStreamRequested);
   EasyBLE.channel().onClosed(onStreamClosed);
   return EasyBLE.begin(DEVICE_NAME, LINK_MAX_MESSAGE_BYTES);
@@ -129,7 +135,7 @@ bool linkJustDisconnected() {
 }
 
 bool linkTakeActivity() {
-  if (!activity) {
+  if (!activity && !EasyBLE.isSending()) {
     return false;
   }
   activity = false;
@@ -142,8 +148,8 @@ void linkLowPower(bool enabled) {
 
 bool linkSendHello(int batteryPercent) {
   char text[64];
-  const int n = snprintf(text, sizeof(text), "hello\n%d\n%s\n%lu\n", batteryPercent, FW_VERSION,
-                         static_cast<unsigned long>(wallpaperHash()));
+  const int n = snprintf(text, sizeof(text), "hello\n%d\n%s\n%lu\n%u\n", batteryPercent, FW_VERSION,
+                         static_cast<unsigned long>(wallpaperHash()), static_cast<unsigned>(LINK_PROTOCOL_VERSION));
   if (n < 0 || n >= static_cast<int>(sizeof(text))) {
     return false;
   }

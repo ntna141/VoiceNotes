@@ -45,13 +45,32 @@ bool helloNeeded = false;
 uint32_t redrawAt = 0;
 bool redrawFull = false;
 char errorMessage[24];
+RTC_DATA_ATTR bool glassLowBattery = false;
+
+bool batteryLow() {
+  return battery < BATTERY_LOW_PERCENT;
+}
+
+void drawHome(bool low) {
+  if (wallpaperPresent()) {
+    wallpaperDraw();
+  } else {
+    screensDrawStatus("VoiceNote", "set a wallpaper in the app");
+  }
+  if (low) {
+    screen.fillRect(EPD_WIDTH - 8 - 24, EPD_HEIGHT - 8 - 13, 30, 15, SCREEN_WHITE);
+    screensDrawLowBattery(EPD_WIDTH - 6 - 22, EPD_HEIGHT - 6 - 11);
+  }
+}
 
 void ensureDisplay() {
   if (displayReady) {
     return;
   }
   powerDisplayOn();
-  screen.begin(true);
+  screen.begin();
+  drawHome(glassLowBattery);
+  screen.loadBase();
   displayReady = true;
 }
 
@@ -77,19 +96,20 @@ void showHome(bool full = false) {
   lastActivityAt = millis();
   lastBatteryCheckAt = millis();
   battery = batteryPercent();
-  if (wallpaperPresent()) {
-    wallpaperDraw();
-  } else {
-    screensDrawStatus("VoiceNote", "set a wallpaper in the app");
-  }
-  if (battery < BATTERY_LOW_PERCENT) {
-    screen.fillRect(EPD_WIDTH - 8 - 24, EPD_HEIGHT - 8 - 13, 30, 15, SCREEN_WHITE);
-    screensDrawLowBattery(EPD_WIDTH - 6 - 22, EPD_HEIGHT - 6 - 11);
-  }
+  const bool low = batteryLow();
+  drawHome(low);
   if (full) {
     screen.showFull();
   } else {
     screen.showPartial();
+  }
+  glassLowBattery = low;
+}
+
+void refreshHomeIfStale() {
+  battery = batteryPercent();
+  if (state == State::Home && batteryLow() != glassLowBattery) {
+    showHome();
   }
 }
 
@@ -121,10 +141,6 @@ void enter(State next) {
       screen.showPartial();
       break;
   }
-}
-
-void voicenoteBusyYield() {
-  linkUpdate();
 }
 
 void sendHello() {
@@ -277,7 +293,7 @@ void loopHome(ButtonEvent rec, ButtonEvent top) {
     return;
   }
   if (top == ButtonEvent::Single) {
-    showHome();
+    refreshHomeIfStale();
     sendHello();
   }
   if (millis() - lastActivityAt >= IDLE_AWAKE_MS && !linkStreamEnabled()) {
@@ -392,6 +408,10 @@ void loopError(ButtonEvent rec, ButtonEvent top) {
 
 }  // namespace
 
+void voicenoteBusyYield() {
+  linkUpdate();
+}
+
 void setup() {
   Serial.begin(115200);
   powerBegin();
@@ -410,10 +430,12 @@ void setup() {
 
   linkBegin();
   if (wake == WakeCause::Cold) {
-    enter(State::Home);
+    state = State::Home;
+    showHome(true);
   } else {
     state = State::Home;
     lastActivityAt = millis();
+    refreshHomeIfStale();
   }
 }
 

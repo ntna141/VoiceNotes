@@ -10,7 +10,8 @@ constexpr uint16_t SCREEN_WHITE = 1;
 class Screen : public Adafruit_GFX {
  public:
   Screen();
-  void begin(bool restorePrevious);
+  void begin();
+  void loadBase();
   void drawPixel(int16_t x, int16_t y, uint16_t color) override;
   void clear();
   void showPartial();
@@ -18,7 +19,6 @@ class Screen : public Adafruit_GFX {
   void sleep();
 
  private:
-  void save();
   epaper_driver_display* _epd = nullptr;
 };
 
